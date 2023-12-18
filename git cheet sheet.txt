@@ -1,0 +1,20 @@
+For branches
+	Merge - Merge branch <name> into <main name>
+		<name> and <main name> - branch names
+			a <name> branch flow in <main name> one
+
+For programming
+	<type>(<optional scope>): <small description>
+		<type> - one of [feat, data, fix, style, refactor, test, docs, chore]
+    			feat: The new feature you're adding to a particular application
+			data: Adding or deleting new data to project
+    			fix: A bug fix
+    			style: Feature and updates related to styling
+    			refactor: Refactoring a specific section of the codebase
+    			test: Everything related to testing
+    			docs: Everything related to documentation
+    			chore: Regular code maintenance
+		<optional scope> - a scope like one of [raw data reading, 
+				database data reading, data writing to database,
+				data visualizing, network model creating,
+				network model training, network model testing]
