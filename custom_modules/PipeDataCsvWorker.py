@@ -43,46 +43,17 @@ class PipeDataCsvWorker(PipeData):
         """Read data file like "*_data.csv" and returns
            pandas dataframe with preprocessed data from it"""
         def split_every_cell_string_value_to_numpy_array_of_64_values(df_cell_value):
-            # Divide each pair of numbers to individual
-            # numbers and collects them to a list
-            def split_numbers_pairs_string_list_to_list(pairs_list):
-                result_list = list()
-                for numbers_pair in pairs_list:
-                    temp = str(numbers_pair).split(':')
-                    # Adds new numbers to result list 
-                    # only if the number has a pair
-                    if len(temp) == 2:
-                        result_list.append(temp)
-                return result_list
-    
-            # Check if init string does not have
-            # numbers returns 64 zeros numpy array
-            if not bool(re.search(r'\d', df_cell_value)):
-                return np.zeros(64).astype(float)
-    
-            # Create 1D list of strings where each
-            # one is a pair of numbers
-            pairs_list = str(df_cell_value).split(',')
-    
-            # Create 2D list of strings where 1
-            # dimension is a quantity of the pairs,
-            # 2 dimension stores numbers of a pair
-            # separately as string
-            pairs_list = split_numbers_pairs_string_list_to_list(pairs_list)
-            result_array = np.array(pairs_list).astype(float)
+            """Converte all data cells values from given pandas dataframe from
+               string (describes 2D values array) to 1D float numpy array of 64 items"""
+            num_pars = re.findall(r'(-?[0-9]+(\.[0-9]+)*):(-?[0-9]+(\.[0-9]+)*)', df_cell_value)
+            num_pars = np.array([[item[0], item[2]] for item in num_pars]).astype(float)
+            if num_pars.size == 0:
+                return np.zeros((64))
+            num_pars = np.pad(num_pars, ((0,32 % num_pars.shape[0]),(0,0)), constant_values=(0))
             
-            # Add number placeholders to the array so it
-            # consists from 64 items
-            result_array = np.pad(result_array, 
-                                  ((0,32 - result_array.shape[0]),(0,0)), 
-                                  'constant', constant_values=(0))
-            
-            # Change numbers order in the array. 
-            # It was like: time_1,amplitude_1,time_2,amplitude_2,....
-            # Now it like: time_1,...,time_32,amplitude_1,...,amplitude_32
-            return np.concatenate((result_array[:,0], result_array[:,1]), axis=0)
+            return np.concatenate((num_pars[:,0], num_pars[:,1]), axis=0)
     
-        df = pd.read_csv(self.path_to_data_file, delimiter=';')
+        df = pd.read_csv(self.path_to_data_file, delimiter=';').astype(str)
         df = df.drop(['position'], axis=1)
         df = df.set_index('row')
         df = df.map(split_every_cell_string_value_to_numpy_array_of_64_values)
