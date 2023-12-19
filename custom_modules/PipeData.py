@@ -107,21 +107,31 @@ class PipeData:
         assert not self._defects_df is None, 'defects_df is not initialized'
         return self._defects_df
         
-    def roll_dfs_along_axis(self, shift: int, axis: int = 0):
+    def roll_dfs_along_axis(self, shift: int = 0, axis: int = 0, default: bool = False):
         """Roll data_df and defects_df elements along a given axis"""
-        def roll_df(df, shift, axis):
+        def roll_df(df, shift = 0, axis = 0, default: bool = False):
             """Roll any dataframe like numpy.roll method"""
-            df_values = np.roll(df.to_numpy(), shift, axis)
-            df_index = (df.index.to_numpy() if axis == 1 
-                            else np.roll(df.index.to_numpy(), shift))
-            df_columns = (df.columns.to_numpy() if axis == 0 
-                              else np.roll(df.columns.to_numpy(), shift))
+            df_values = df.to_numpy()
+            df_indexes = df.index.to_numpy()
+            df_columns = df.columns.to_numpy()
+            
+            if default:
+                df_columns_numbers = [int(re.search('[0-9]+', col)[0]) for col in df_columns]
+                df_indexes_numbers = df_indexes.astype(int).tolist()
+                shift = (-1*df_indexes_numbers.index(max(df_indexes_numbers))-1 
+                             if axis == 0 else -1*df_columns_numbers.index(max(df_columns_numbers))-1) 
+            
+            df_values = np.roll(df_values, shift, axis)
+            if axis == 0:
+                df_indexes = np.roll(df.index.to_numpy(), shift)
+            if axis == 1:
+                df_columns = np.roll(df.columns.to_numpy(), shift)
         
-            return pd.DataFrame(data=df_values, index=df_index, 
+            return pd.DataFrame(data=df_values, index=df_indexes, 
                                 columns=df_columns)
 
         assert not self._data_df is None, 'data_df is not initialized'
         assert not self._defects_df is None, 'defects_df is not initialized'
-
-        self._data_df = roll_df(self._data_df, shift, axis)
-        self._defects_df = roll_df(self._defects_df, shift, axis)
+        
+        self._data_df = roll_df(self._data_df, shift, axis, default)
+        self._defects_df = roll_df(self._defects_df, shift, axis, default)
