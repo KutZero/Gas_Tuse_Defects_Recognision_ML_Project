@@ -6,156 +6,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append('custom_modules')
+from PipeData import PipeData
 from PathToCsv import PathToCsv
 
 # A class for read data from csv files
 # and research it
-class PipeDataCsvWorker:
+class PipeDataCsvWorker(PipeData):
 
     path_to_data_file = PathToCsv()
     path_to_defects_file = PathToCsv()
     path_to_pipe_file = PathToCsv()
     
     def __init__(self, 
-                 path_to_data_file,
-                 path_to_defects_file,
-                 path_to_pipe_file):
+                 path_to_data_file: str,
+                 path_to_defects_file: str,
+                 path_to_pipe_file: str):
         self.path_to_data_file = path_to_data_file
         self.path_to_defects_file = path_to_defects_file
         self.path_to_pipe_file = path_to_pipe_file
-        self.read_csv_data()
-
-    def get_defects_df(self):
-        return self._defects_df
-
-    def get_data_df(self):
-        return self._data_df
-    
-    # roll data_df and defects_df elements along a given axis
-    def roll_dfs_along_axis(self, shift, axis=0):
-        # roll any dataframe like numpy.roll method
-        def roll_df(df, shift, axis):
-            df_values = np.roll(df.to_numpy(), shift, axis)
-            df_index = (df.index.to_numpy() if axis == 1 
-                            else np.roll(df.index.to_numpy(), shift))
-            df_columns = (df.columns.to_numpy() if axis == 0 
-                              else np.roll(df.columns.to_numpy(), shift))
-        
-            return pd.DataFrame(data=df_values, index=df_index, 
-                                columns=df_columns)
-        
-        if not type(shift) is int:
-            raise TypeError("A shift should be int")
-        if not type(axis) is int:
-            raise TypeError("An axis should be int")
-        if not axis in [0, 1]:
-            raise ValueError('An axis should be 0 or 1')
-
-        self._data_df = roll_df(self._data_df, shift, axis)
-        self._defects_df = roll_df(self._defects_df, shift, axis)
-        
-
-    # draw a defects map from defects_df data
-    def draw_defects_map(self, 
-                         title='Развернутая карта дефектов',
-                         xlabel: str = 'Номер датчика', 
-                         ylabel: str = 'Номер измерения',
-                         x_ticks_step = 50,
-                         y_ticks_step = 20):
-        
-        if not type(title) is str:
-            raise TypeError("A title should be str")
-        if not type(xlabel) is str:
-            raise TypeError("A xlabel should be str")
-        if not type(ylabel) is str:
-            raise TypeError("A ylabel should be str")
-
-        # add fillers between itemns of an array
-        # only in case when prev value less than
-        # next one
-        def add_fillers(arr, i=0, step=1):
-            if i > len(arr)-2:
-                return arr
-            if abs(arr[i] - arr[i+1]) >= step * 1.5:
-                if arr[i] < arr[i+1]:
-                    arr.insert(i+1, arr[i]+step)
-            return add_fillers(arr, i+1, step)
-
-        # merge biggest and smalles value
-        # in one like 'big/small'
-        # for roll operation only
-        def merge_corners(arr):
-            for i in range(len(arr)):
-                if arr[i] == max(arr):
-                    arr[i] = f'{max(arr)}/{min(arr)}'
-                    del arr[i+1]
-                    break
-            return arr
-        
-        with plt.style.context('dark_background'):
-
-            fig, ax = plt.subplots()
-            
-            # decorate     
-            fig.set_figwidth(18)
-            fig.set_figheight(8)
-            fig.patch.set_alpha(0.0)
-            ax.invert_yaxis()
-            ax.xaxis.tick_top()
-            ax.xaxis.set_label_position('top')
-            ax.set_title(title, fontsize=25) 
-            ax.set_xlabel(xlabel, fontsize=20) 
-            ax.set_ylabel(ylabel, fontsize=20) 
-            ax.tick_params(axis='both', which='both', labelsize = 20)
-            
-            df = self._defects_df
-
-            # get columns and indexes list of int type
-            cols = [int(col.split('_')[1]) for col in df.columns.values]
-            indexes = df.index.values.tolist()
-
-            # array with essential x labels items
-            new_x_labels = [cols[0], cols[-1]]
-            new_y_labels = [indexes[0], indexes[-1]]
-
-            # add essential items if dataframe was rolled
-            if max(cols) != cols[-1]:
-                new_x_labels.insert(1, max(cols))
-                new_x_labels.insert(2, min(cols))
-
-            # add essential items if dataframe was rolled
-            if max(indexes) != indexes[-1]:
-                new_y_labels.insert(1, max(indexes))
-                new_y_labels.insert(2, min(indexes))
-
-            # add fillers to labels lists
-            new_x_labels = add_fillers(new_x_labels,step=x_ticks_step)
-            new_y_labels = add_fillers(new_y_labels,step=y_ticks_step)
-
-            # merge border values together if
-            # dataframe was rolled
-            if max(cols) != cols[-1]:
-                new_x_labels = merge_corners(new_x_labels)
-            if max(indexes) != indexes[-1]:    
-                new_y_labels = merge_corners(new_y_labels)
-
-            # make all items str type
-            new_x_labels = [str(item) for item in new_x_labels]
-            new_y_labels = [str(item) for item in new_y_labels]
-
-            # calculate locks of label values
-            new_x_locs = [cols.index(int(re.match("[0-9]+", item)[0])) 
-                          for item in new_x_labels]
-            new_y_locs = [indexes.index(int(re.match("[0-9]+", item)[0])) 
-                          for item in new_y_labels]
-            
-            ax.pcolormesh(df)
-
-            plt.xticks(new_x_locs, new_x_labels)
-            plt.yticks(new_y_locs, new_y_labels)
-            
-
-        plt.show()
+        self.read_data()
     
     # Read data file like "*_defects.csv" and returns 
     # pandas dataframe with preprocessed data from it    
@@ -223,7 +92,7 @@ class PipeDataCsvWorker:
         df = df.map(split_every_cell_string_value_to_numpy_array_of_64_values)
         return df
 
-    def read_csv_data(self):
+    def read_data(self):
         data_df = self._get_df_from_data_file()
         defects_df = self._get_df_from_defects_file()
         pipe_df = self._get_df_from_pipe_file()
