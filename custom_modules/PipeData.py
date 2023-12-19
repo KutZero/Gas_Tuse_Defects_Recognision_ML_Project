@@ -8,6 +8,7 @@ from functools import wraps
 from matplotlib.text import Text
 
 class PipeData:
+    """Base abstract class for ones to work with pipe data"""
     _data_df = None
     _defects_df = None
     

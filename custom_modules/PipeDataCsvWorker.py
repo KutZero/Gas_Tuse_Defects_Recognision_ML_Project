@@ -9,9 +9,8 @@ sys.path.append('custom_modules')
 from PipeData import PipeData
 from PathToCsv import PathToCsv
 
-# A class for read data from csv files
-# and research it
 class PipeDataCsvWorker(PipeData):
+    """A class for read data from csv files and research it"""
 
     path_to_data_file = PathToCsv()
     path_to_defects_file = PathToCsv()
@@ -26,26 +25,23 @@ class PipeDataCsvWorker(PipeData):
         self.path_to_pipe_file = path_to_pipe_file
         self.read_data()
     
-    # Read data file like "*_defects.csv" and returns 
-    # pandas dataframe with preprocessed data from it    
     def _get_df_from_defects_file(self):
+        """Read data file like "*_defects.csv" and returns
+           pandas dataframe with preprocessed data from it"""
         using_columns = ['row_min', 'row_max', 'detector_min', 
                          'detector_max', 'fea_depth']
         df = pd.read_csv(self.path_to_defects_file, delimiter=';')
         return df[using_columns]
         
-    # Read data file like "*_pipe.csv" and returns 
-    # pandas dataframe   
     def _get_df_from_pipe_file(self):
+        """Read data file like "*_pipe.csv" and returns 
+           pandas dataframe"""
         df = pd.read_csv(self.path_to_pipe_file, delimiter=';')
         return df
 
-    # Read data file like "*_data.csv" and returns 
-    # pandas dataframe with preprocessed data from it
     def _get_df_from_data_file(self):
-        # Converte all data cells values from given pandas 
-        # dataframe from string (describes 2D values array)
-        # to 1D float numpy array of 64 items
+        """Read data file like "*_data.csv" and returns
+           pandas dataframe with preprocessed data from it"""
         def split_every_cell_string_value_to_numpy_array_of_64_values(df_cell_value):
             # Divide each pair of numbers to individual
             # numbers and collects them to a list
@@ -93,6 +89,7 @@ class PipeDataCsvWorker(PipeData):
         return df
 
     def read_data(self):
+        """Read data from set of .csv files"""
         data_df = self._get_df_from_data_file()
         defects_df = self._get_df_from_defects_file()
         pipe_df = self._get_df_from_pipe_file()

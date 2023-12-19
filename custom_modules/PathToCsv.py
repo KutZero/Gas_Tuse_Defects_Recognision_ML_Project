@@ -1,9 +1,10 @@
 import os
 
-# path variables descriptor
 class PathToCsv:
+    """Path to .csv files variables descriptor"""
     @classmethod
     def is_path_correct(cls, path):
+        """Check is a path correct"""
         if not type(path) is str:
             raise TypeError("A path should be str")
         if not os.path.isfile(path):
