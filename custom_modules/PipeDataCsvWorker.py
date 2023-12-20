@@ -88,4 +88,5 @@ class PipeDataCsvWorker(PipeData):
 
         defects_df = base_df
         self._defects_df = defects_df
-        self._data_df = data_df        self._orig_items_mask = np.full(defects_df.shape, True)
+        self._data_df = data_df
+        self._extend = {'left':0,'top':0,'right':data_df.shape[1], 'bottom':data_df.shape[0]}

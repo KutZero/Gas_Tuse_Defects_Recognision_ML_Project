@@ -12,14 +12,49 @@ class PipeData:
     
     _data_df = None # pd.DataFrame with input network model data
     _defects_df = None # pd.DataFrame with output network model data
-    # np.ndarray with binary mask where True says that this item
-    # is original one and was readed from file or database. False - 
-    # this item was created by artificial extending for network
-    # model prediction or training quantity increasing
-    _orig_items_mask = None 
+    # dict with 'left','right','top','bottom' keys. Each key store
+    # a value where original (not extended) dfs are located
+    _extend = None 
     # cumulative dfs shifting history
     _shift = None
 
+    @staticmethod
+    def _extend_df_for_crops_dividing(df, crop_size, crop_step):
+        """Inner help func for extend one df for exact crops dividing
+        where crop have <crop_size> and <crop_step>"""
+        new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
+        new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
+    
+        if new_rows != crop_step:
+            df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
+        if new_cols != crop_step:
+            df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
+            
+        return df
+    
+    def reset_dfs_to_original(self):
+        """Reset dfs extendings and rollings"""
+        assert not self._extend is None, '_extend parameter is not initialized'
+        self.roll_dfs_along_axis(axis=0, default=True)
+        self.roll_dfs_along_axis(axis=1, default=True)
+        self._data_df = self._data_df.iloc[self._extend['top']:self._extend['bottom'],
+                                            self._extend['left']:self._extend['right']] 
+        self._defects_df = self._defects_df.iloc[self._extend['top']:self._extend['bottom'],
+                                            self._extend['left']:self._extend['right']]
+        self._extend['left'] = 0
+        self._extend['top'] = 0
+        self._extend['right'] = self._data_df.shape[1]
+        self._extend['bottom'] = self._data_df.shape[0]
+    
+    def extend_dfs_for_crops_dividing(self, crop_size, crop_step):
+        """Extend dfs to be divided by crops of size <crop_size>
+        exactly with crop divide step - <crop_step>"""
+        assert not self._extend is None, '_extend parameter is not initialized'
+        self.reset_dfs_to_original()
+        self._data_df = self._extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
+        self._defects_df = self._extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
+        
+    
     
     def draw_defects_map(self, 
                 title: str = 'Развернутая карта дефектов',
@@ -149,7 +184,6 @@ class PipeData:
         
         self._data_df = roll_df(self._data_df, shift_arr[axis], axis)
         self._defects_df = roll_df(self._defects_df, shift_arr[axis], axis)
-        self._orig_items_mask = np.roll(self._orig_items_mask, shift_arr[axis], axis)
         
 
 
