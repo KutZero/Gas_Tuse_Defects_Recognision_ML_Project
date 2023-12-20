@@ -174,7 +174,7 @@ class PipeData:
                 
             for i in range(len(ytext_labels)):
                 or_x, or_y = ytext_labels[i].get_position()
-                ytext_labels[i].set(x=or_x-ylabel_paddings[i]*0.02)
+                ytext_labels[i].set(x=or_x-ylabel_paddings[i]*0.05)
 
             ax.set_xticklabels(xtext_labels) 
             ax.set_yticklabels(ytext_labels) 
