@@ -9,8 +9,9 @@ from matplotlib.text import Text
 
 class PipeData:
     """Base abstract class for ones to work with pipe data"""
-    _data_df = None
-    _defects_df = None
+    
+    _data_df = None # pd.DataFrame with input network model data
+    _defects_df = None # pd.DataFrame with output network model data
     # np.ndarray with binary mask where True says that this item
     # is original one and was readed from file or database. False - 
     # this item was created by artificial extending for network
@@ -48,15 +49,15 @@ class PipeData:
             locs = np.sort(np.unique(np.concatenate(
                             [np.where((arr == min(arr)) | (arr == max(arr)))[0],
                                    [0, arr.shape[0]-1]], axis=0)))
-        
+    
             locs = add_index_fillers(locs, step)
             labels = arr[locs]
             # labels paddings for avoid labels overlapping
             label_paddings = cals_labels_paddings(locs, step)
             return locs, label_paddings, labels
         
-        assert not self._data_df is None, 'data_df is not initialized'
-        assert not self._defects_df is None, 'defects_df is not initialized'
+        assert not self._data_df is None, '_data_df parameter is not initialized'
+        assert not self._defects_df is None, '_defects_df parameter is not initialized'
 
         with plt.style.context('dark_background'):
             fig, ax = plt.subplots()
@@ -108,13 +109,13 @@ class PipeData:
         plt.show()
     
     def get_data_df(self):
-        assert not self._data_df is None, 'data_df is not initialized'
+        assert not self._data_df is None, '_data_df parameter is not initialized'
         return self._data_df
 
     def get_defects_df(self):
-        assert not self._defects_df is None, 'defects_df is not initialized'
+        assert not self._defects_df is None, '_defects_df parameter is not initialized'
         return self._defects_df
-        
+    
     def roll_dfs_along_axis(self, shift: int = 0, axis: int = 0, default: bool = False):
         """Roll data_df and defects_df elements along a given axis"""
         def roll_df(df, shift: int = 0, axis: int = 0):
@@ -132,8 +133,8 @@ class PipeData:
             return pd.DataFrame(data=df_values, index=df_indexes, 
                                 columns=df_columns)
 
-        assert not self._data_df is None, 'data_df is not initialized'
-        assert not self._defects_df is None, 'defects_df is not initialized'
+        assert not self._data_df is None, '_data_df parameter is not initialized'
+        assert not self._defects_df is None, '_defects_df parameter is not initialized'
         assert not self._shift is None, '_shift parameter is not initialized'
         
         # index - axis, value - shift
