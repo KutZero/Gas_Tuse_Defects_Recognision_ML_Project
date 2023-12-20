@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from functools import wraps
 from matplotlib.text import Text
+from IPython.display import display
 
 class PipeData:
     """Base abstract class for ones to work with pipe data"""
@@ -51,6 +52,43 @@ class PipeData:
         exactly with crop divide step - <crop_step>"""
         assert not self._extend is None, '_extend parameter is not initialized'
         self.reset_dfs_to_original()
+        self._data_df = self._extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
+        self._defects_df = self._extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
+        
+    
+    def extend_dfs_for_prediction(self, crop_size, crop_step):
+        """Extend dfs for increasing network model prediction or
+        training quantity. 
+        To left side of dfs is added reverse right <crop_size>-1 
+        columns of them. 
+        To right side of dfs is added reverse left <crop_size>-1 
+        columns of them and some for exact dividing by crops with
+        <crop_size> and <crop_step>. 
+        To top side is added reverse top <crop_size>-1 rows. 
+        To bottom side is added reverse bottom <crop_size>-1 rows
+        and some for exact dividing by crops with <crop_size> and 
+        <crop_step>.."""
+        assert not self._data_df is None, '_data_df parameter is not initialized'
+        assert not self._defects_df is None, '_defects_df parameter is not initialized'
+        def extend_df_for_prediction(df, extend_dims):
+            """Help func to extend 1 df for extend_dims for every side"""
+            df = pd.concat([df.iloc[:,-1*extend_dims:], df, df.iloc[:,:extend_dims]],axis=1)
+            df = pd.concat([df.iloc[extend_dims:0:-1,:], df, df.iloc[-2:-extend_dims-2:-1,:]],axis=0)
+            
+            return df
+            
+        self.reset_dfs_to_original()
+        
+        extend_dims = crop_size - 1
+
+        self._extend['left'] += extend_dims
+        self._extend['top'] += extend_dims
+        self._extend['right'] += extend_dims
+        self._extend['bottom'] += extend_dims
+
+        self._data_df = extend_df_for_prediction(self._data_df, extend_dims)
+        self._defects_df = extend_df_for_prediction(self._defects_df, extend_dims)
+            
         self._data_df = self._extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
         self._defects_df = self._extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
         
