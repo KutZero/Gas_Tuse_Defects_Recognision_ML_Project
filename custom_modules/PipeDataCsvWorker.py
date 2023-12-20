@@ -23,6 +23,7 @@ class PipeDataCsvWorker(PipeData):
         self.path_to_data_file = path_to_data_file
         self.path_to_defects_file = path_to_defects_file
         self.path_to_pipe_file = path_to_pipe_file
+        self._shift = [0,0]
         self.read_data()
     
     def _get_df_from_defects_file(self):
@@ -87,4 +88,4 @@ class PipeDataCsvWorker(PipeData):
 
         defects_df = base_df
         self._defects_df = defects_df
-        self._data_df = data_df
+        self._data_df = data_df        self._orig_items_mask = np.full(defects_df.shape, True)
