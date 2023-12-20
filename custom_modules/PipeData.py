@@ -77,9 +77,9 @@ class PipeData:
             df = self._defects_df
         
             # get columns and indexes list of int type
-            cols = [int(re.search('[0-9]+', col)[0]) for col in df.columns.values]
-            cols = np.array(cols)
-            indexes = df.index.values
+            cols = [re.search('[0-9]+', col)[0] for col in df.columns.to_numpy()]
+            cols = np.array(cols).astype(int)
+            indexes = df.index.to_numpy().astype(int)
             
             xlocs, xlabel_paddings, xlabels = calc_labels_and_locs(cols, x_ticks_step)
             ylocs, ylabel_paddings, ylabels = calc_labels_and_locs(indexes, y_ticks_step)
