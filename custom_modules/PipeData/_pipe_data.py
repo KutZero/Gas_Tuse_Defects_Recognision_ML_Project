@@ -1,12 +1,13 @@
-import os
-import sys
 import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from functools import wraps
+
 from matplotlib.text import Text
-from IPython.display import display
+
+from . import dataframe_utils as dfut
+
+__all__ = ["PipeData"]
 
 class PipeData:
     """Base abstract class for ones to work with pipe data"""
@@ -18,20 +19,7 @@ class PipeData:
     _extend = None 
     # cumulative dfs shifting history
     _shift = None
-
-    @staticmethod
-    def _extend_df_for_crops_dividing(df, crop_size, crop_step):
-        """Inner help func for extend one df for exact crops dividing
-        where crop have <crop_size> and <crop_step>"""
-        new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
-        new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
-    
-        if new_rows != crop_step:
-            df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
-        if new_cols != crop_step:
-            df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
-            
-        return df
+    _crops_description = None
     
     def reset_dfs_to_original(self):
         """Reset dfs extendings and rollings"""
@@ -47,16 +35,17 @@ class PipeData:
         self._extend['right'] = self._data_df.shape[1]
         self._extend['bottom'] = self._data_df.shape[0]
     
-    def extend_dfs_for_crops_dividing(self, crop_size, crop_step):
+    def extend_dfs_for_crops_dividing(self, crop_size: int, crop_step: int):
         """Extend dfs to be divided by crops of size <crop_size>
         exactly with crop divide step - <crop_step>"""
         assert not self._extend is None, '_extend parameter is not initialized'
         self.reset_dfs_to_original()
-        self._data_df = self._extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
-        self._defects_df = self._extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
-        
+        self._data_df = dfut.extend_df_for_crops_dividing(self._data_df, 
+                                                           crop_size, crop_step)
+        self._defects_df = dfut.extend_df_for_crops_dividing(self._defects_df, 
+                                                              crop_size, crop_step)
     
-    def extend_dfs_for_prediction(self, crop_size, crop_step):
+    def extend_dfs_for_prediction(self, crop_size: int, crop_step: int):
         """Extend dfs for increasing network model prediction or
         training quantity. 
         To left side of dfs is added reverse right <crop_size>-1 
@@ -67,15 +56,9 @@ class PipeData:
         To top side is added reverse top <crop_size>-1 rows. 
         To bottom side is added reverse bottom <crop_size>-1 rows
         and some for exact dividing by crops with <crop_size> and 
-        <crop_step>.."""
+        <crop_step>."""
         assert not self._data_df is None, '_data_df parameter is not initialized'
         assert not self._defects_df is None, '_defects_df parameter is not initialized'
-        def extend_df_for_prediction(df, extend_dims):
-            """Help func to extend 1 df for extend_dims for every side"""
-            df = pd.concat([df.iloc[:,-1*extend_dims:], df, df.iloc[:,:extend_dims]],axis=1)
-            df = pd.concat([df.iloc[extend_dims:0:-1,:], df, df.iloc[-2:-extend_dims-2:-1,:]],axis=0)
-            
-            return df
             
         self.reset_dfs_to_original()
         
@@ -86,13 +69,11 @@ class PipeData:
         self._extend['right'] += extend_dims
         self._extend['bottom'] += extend_dims
 
-        self._data_df = extend_df_for_prediction(self._data_df, extend_dims)
-        self._defects_df = extend_df_for_prediction(self._defects_df, extend_dims)
+        self._data_df = dfut.extend_df_for_prediction(self._data_df, crop_size, crop_step)
+        self._defects_df = dfut.extend_df_for_prediction(self._defects_df, crop_size, crop_step)
             
-        self._data_df = self._extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
-        self._defects_df = self._extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
-        
-    
+        self._data_df = dfut.extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
+        self._defects_df = dfut.extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
     
     def draw_defects_map(self, 
                 title: str = 'Развернутая карта дефектов',
@@ -191,21 +172,6 @@ class PipeData:
     
     def roll_dfs_along_axis(self, shift: int = 0, axis: int = 0, default: bool = False):
         """Roll data_df and defects_df elements along a given axis"""
-        def roll_df(df, shift: int = 0, axis: int = 0):
-            """Roll any dataframe like numpy.roll method"""
-            df_values = df.to_numpy()
-            df_indexes = df.index.to_numpy()
-            df_columns = df.columns.to_numpy()
-
-            df_values = np.roll(df_values, shift, axis)
-            if axis == 1:
-                df_indexes = np.roll(df.index.to_numpy(), shift)
-            if axis == 0:
-                df_columns = np.roll(df.columns.to_numpy(), shift)
-            
-            return pd.DataFrame(data=df_values, index=df_indexes, 
-                                columns=df_columns)
-
         assert not self._data_df is None, '_data_df parameter is not initialized'
         assert not self._defects_df is None, '_defects_df parameter is not initialized'
         assert not self._shift is None, '_shift parameter is not initialized'
@@ -220,8 +186,8 @@ class PipeData:
         else:
             self._shift[axis] += shift_arr[axis]
         
-        self._data_df = roll_df(self._data_df, shift_arr[axis], axis)
-        self._defects_df = roll_df(self._defects_df, shift_arr[axis], axis)
+        self._data_df = dfut.roll_df(self._data_df, shift_arr[axis], axis)
+        self._defects_df = dfut.roll_df(self._defects_df, shift_arr[axis], axis)
         
 
 

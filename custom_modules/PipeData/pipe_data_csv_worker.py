@@ -1,13 +1,12 @@
-import os
-import sys
 import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append('custom_modules')
-from PipeData import PipeData
-from PathToCsv import PathToCsv
+from ._pipe_data import PipeData
+from ._path_to_csv import PathToCsv
+
+__all__ = ["PipeDataCsvWorker"]
 
 class PipeDataCsvWorker(PipeData):
     """A class for read data from csv files and research it"""
