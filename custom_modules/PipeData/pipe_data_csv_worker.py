@@ -11,8 +11,11 @@ __all__ = ["PipeDataCsvWorker"]
 class PipeDataCsvWorker(PipeData):
     """A class for read data from csv files and research it"""
 
+    # The path to a data file like "*_data.csv"
     path_to_data_file = PathToCsv()
+    # The path to a data file like "*_defects.csv"
     path_to_defects_file = PathToCsv()
+    # The path to a data file like "*_pipe.csv"
     path_to_pipe_file = PathToCsv()
     
     def __init__(self, 

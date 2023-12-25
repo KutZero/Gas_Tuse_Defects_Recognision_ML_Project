@@ -3,25 +3,48 @@ import numpy as np
 
 __all__ = ["roll_df", "extend_df_for_crops_dividing", "extend_df_for_prediction"]
 
-def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0):
+def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     """
-    Roll a dataframe like numpy.roll method
+    Roll a dataframe like numpy.roll method.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        The dataframe to be rolled
+    df : pandas.DataFrame
+        The dataframe to be rolled.
     shift : int, optional
-        The number of places by which elements are shifted, default is 0
+        The number of places by which elements are shifted, default is 0.
     axis : int, {0 or 1}, optional
-        Axis along which elements are shifted, default is 0 
+        Axis along which elements are shifted, default is 0 .
 
     Returns
     -------
-    out : pd.DataFrame
+    out : pandas.DataFrame
         Output dataframe, with the same shape as df.
+
+    Raises
+    ------
+    TypeError
+        1. If the df is not pandas.Dataframe type.
+        2. If the shift is not int type.
+        3. If the axis is not int type.
+    ValueError
+        1. If the axis is not 0 or 1 (because dataframes
+        have only 2 dimensions).
         
     """
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("The df should be pandas.Dataframe")
+    if not isinstance(shift, int):
+        raise TypeError("The shift should be int")
+    if not isinstance(axis, int):
+        raise TypeError("The axis should be int")
+
+    if shift == 0:
+        return
+
+    if not axis in (0,1):
+        raise ValueError("The axis should be 0 or 1")
+    
     df_values = df.to_numpy()
     df_indexes = df.index.to_numpy()
     df_columns = df.columns.to_numpy()
@@ -32,30 +55,51 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0):
     if axis == 1:
         df_columns = np.roll(df.columns.to_numpy(), shift)
 
-    out = pd.DataFrame(data=df_values, index=df_indexes, 
+    return pd.DataFrame(data=df_values, index=df_indexes, 
                         columns=df_columns)
-    return out
 
-def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: int):
+def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: int) -> pd.DataFrame:
     """
-    Extend the df for exact crops dividing where crop have <crop_size> 
-    and <crop_step>
+    Extend the df for exact crops dividing by a determined crop window with
+    a determined cropping step.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        The dataframe to be extended
+    df : pandas.DataFrame
+        The dataframe to be extended.
     crop_size : int
-        The size of crop sliding window (has equal sides)
+        The size of crop sliding window (has equal sides).
     crop_step : int
-        The step for df cropping by sliding window)
+        The step for df cropping by sliding window).
 
     Returns
     -------
-    out : pd.DataFrame
+    out : pandas.DataFrame
         Output extended dataframe.
         
+    Raises
+    ------
+    TypeError
+        1. If the df is not pandas.Dataframe type.
+        2. If the crop_size is not int type.
+        3. If the crop_step is not int type.
+    ValueError
+        1. If the crop_size is less than 1.
+        2. If the crop_step is less than 1.
+        
     """
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("The df should be pandas.Dataframe")
+    if not isinstance(crop_size, int):
+        raise TypeError("The crop_size should be int")
+    if not isinstance(crop_step, int):
+        raise TypeError("The crop_step should be int")
+
+    if crop_size < 1:
+        raise ValueError("The crop_size should be grater than or equal to 1")
+    if crop_step < 1:
+        raise ValueError("The crop_step should be grater than or equal to 1")
+    
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
@@ -66,7 +110,7 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
         
     return df
 
-def extend_df_for_prediction(df, crop_size: int, crop_step: int):
+def extend_df_for_prediction(df, crop_size: int, crop_step: int) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
     training quantity. 
@@ -82,19 +126,41 @@ def extend_df_for_prediction(df, crop_size: int, crop_step: int):
 
     Parameters
     ----------
-    df : pd.DataFrame
-        The dataframe to be extended
+    df : pandas.DataFrame
+        The dataframe to be extended.
     crop_size : int
-        The size of crop sliding window (has equal sides)
+        The size of crop sliding window (has equal sides).
     crop_step : int
-        The step for df cropping by sliding window)
+        The step for df cropping by sliding window).
 
     Returns
     -------
     out : pd.DataFrame
         Output extended dataframe.
         
+    Raises
+    ------
+    TypeError
+        1. If the df is not pandas.Dataframe type.
+        2. If the crop_size is not int type.
+        3. If the crop_step is not int type.
+    ValueError
+        1. If the crop_size is less than 1.
+        2. If the crop_step is less than 1.
+        
     """
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("The df should be pandas.Dataframe")
+    if not isinstance(crop_size, int):
+        raise TypeError("The crop_size should be int")
+    if not isinstance(crop_step, int):
+        raise TypeError("The crop_step should be int")
+
+    if crop_size < 1:
+        raise ValueError("The crop_size should be grater than or equal to 1")
+    if crop_step < 1:
+        raise ValueError("The crop_step should be grater than or equal to 1")
+    
     extend_dims = crop_size - 1
     
     df = pd.concat([df.iloc[:,-1*extend_dims:], df, df.iloc[:,:extend_dims]],axis=1)

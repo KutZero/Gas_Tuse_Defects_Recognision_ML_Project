@@ -4,14 +4,30 @@ __all__ = ["PathToCsv"]
 
 class PathToCsv:
     """Path to .csv files variables descriptor"""
+    
     @classmethod
     def is_path_correct(cls, path: str) -> bool:
-        """Check is a path correct
-        :param str path: A path to .csv file
-        :return: is path correct
-        :rtype: bool
-        :raises TypeError: if the path is not str
-        :raises ValueError: if the path is not exist or don't locate to a .csv file"""
+        """
+        Check is the path correct
+        
+        Parameters
+        ----------
+        path: str
+            The path to a .csv file.
+            
+        Returns
+        -------
+        out : bool
+            True if the path is correct and locates to an existing file.
+            
+        Raises
+        ------
+        TypeError
+            1. If the path is not str type.
+        ValueError
+            1. If the path is not exist or don't locate to a .csv file.
+
+        """
         if not type(path) is str:
             raise TypeError("A path should be str")
         if not os.path.isfile(path) or not path.endswith('.csv'):

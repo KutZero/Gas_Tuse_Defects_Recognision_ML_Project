@@ -1,3 +1,5 @@
+Commit style example: https://github.com/octokit/rest.js/commits/main
+
 For branches
 	Merge - Merge branch <name> into <main name>
 		<name> and <main name> - branch names
