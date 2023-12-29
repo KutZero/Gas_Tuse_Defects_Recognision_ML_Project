@@ -40,7 +40,7 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
         raise TypeError("The axis should be int")
 
     if shift == 0:
-        return
+        return df
 
     if not axis in (0,1):
         raise ValueError("The axis should be 0 or 1")
@@ -50,6 +50,7 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     df_columns = df.columns.to_numpy()
 
     df_values = np.roll(df_values, shift, axis)
+    
     if axis == 0:
         df_indexes = np.roll(df.index.to_numpy(), shift)
     if axis == 1:

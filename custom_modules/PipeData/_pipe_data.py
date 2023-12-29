@@ -24,6 +24,7 @@ class PipeData:
     def reset_dfs_to_original(self):
         """Reset the inner dfs extendings and rollings"""
         assert not self._extend is None, '_extend parameter is not initialized'
+        
         self.roll_dfs_along_axis(axis=0, default=True)
         self.roll_dfs_along_axis(axis=1, default=True)
         self._data_df = self._data_df.iloc[self._extend['top']:self._extend['bottom'],
@@ -84,7 +85,7 @@ class PipeData:
         """
         assert not self._data_df is None, '_data_df parameter is not initialized'
         assert not self._defects_df is None, '_defects_df parameter is not initialized'
-            
+        
         self.reset_dfs_to_original()
         
         extend_dims = crop_size - 1
@@ -263,7 +264,7 @@ class PipeData:
         assert not self._data_df is None, '_data_df parameter is not initialized'
         assert not self._defects_df is None, '_defects_df parameter is not initialized'
         assert not self._shift is None, '_shift parameter is not initialized'
-
+        
         if not isinstance(default, bool):
             raise TypeError("The default should be bool")
         
@@ -279,6 +280,7 @@ class PipeData:
         
         self._data_df = dfut.roll_df(self._data_df, shift_arr[axis], axis)
         self._defects_df = dfut.roll_df(self._defects_df, shift_arr[axis], axis)
+
         
 
 
