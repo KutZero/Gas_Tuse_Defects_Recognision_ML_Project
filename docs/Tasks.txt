@@ -1,0 +1,9 @@
+1. Make PipeData class abstract
+2. Add a PipeData method to draw a data scanning density of crop size and step
+3. Think about reading large .csv
+4. Think about virtual data dividing to crops
+5. Think about virtual data augmenting
+6. Think about virtual data norm
+7. Think about virtual data train,val,test datasets dividing
+8. Think about virtual data passing to model train method
+9. Think about adding a maxpool layer to input of an original one and processing crops less than 64*64 

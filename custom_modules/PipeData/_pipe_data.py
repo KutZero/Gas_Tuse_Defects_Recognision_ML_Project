@@ -4,8 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from matplotlib.text import Text
+from abc import ABC, abstractmethod 
 
 from . import dataframe_utils as dfut
+from abc import ABC
 
 __all__ = ["PipeData"]
 
@@ -19,7 +21,6 @@ class PipeData:
     _extend = None 
     # cumulative dfs shifting history
     _shift = None
-    _crops_description = None
     
     def reset_dfs_to_original(self):
         """Reset the inner dfs extendings and rollings"""
@@ -54,10 +55,9 @@ class PipeData:
         assert not self._extend is None, '_extend parameter is not initialized'
 
         self.reset_dfs_to_original()
-        self._data_df = dfut.extend_df_for_crops_dividing(self._data_df, 
-                                                           crop_size, crop_step)
-        self._defects_df = dfut.extend_df_for_crops_dividing(self._defects_df, 
-                                                              crop_size, crop_step)
+        
+        self._data_df = dfut.extend_df_for_crops_dividing(self._data_df, crop_size, crop_step)
+        self._defects_df = dfut.extend_df_for_crops_dividing(self._defects_df, crop_size, crop_step)
     
     def extend_dfs_for_prediction(self, crop_size: int, crop_step: int):
         """
