@@ -2,6 +2,7 @@ import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import psycopg2
 
 from ._pipe_data import PipeData
 from ._path_to_csv import PathToCsv
@@ -10,7 +11,7 @@ __all__ = ["PipeDataCsvWorker"]
 
 class PipeDataCsvWorker(PipeData):
     """A class for read data from csv files and research it"""
-
+    
     # The path to a data file like "*_data.csv"
     path_to_data_file = PathToCsv()
     # The path to a data file like "*_defects.csv"
@@ -27,6 +28,47 @@ class PipeDataCsvWorker(PipeData):
         self.path_to_pipe_file = path_to_pipe_file
         self._shift = [0,0]
         self.read_data()
+
+    def write_to_db(self, **kwargs):
+        """
+        Write data to postgres database 
+        """
+
+        # sql insert query template
+        INSERT_INPUT_DATA_CELL_QUERY = """
+            INSERT INTO data_cell(
+            file_id, 
+            row_id, 
+            detector_id, 
+            time_values, 
+            amplitude_values,
+            defect_depth) VALUES (%s,%s,%s,%s,%s,%s);
+            """
+
+        conn = psycopg2.connect(**kwargs)
+        
+        last_file_id = 0
+            
+        with conn.cursor() as cursor:
+            cursor.execute('SELECT MAX(file_id) FROM data_cell')
+            result = cursor.fetchone()
+            if result[0] is not None: 
+                last_file_id = result[0]+1    
+
+        with conn.cursor() as cursor:
+            # insert data in data_cell table
+            for i in range(self._data_df.shape[0]):
+                for j in range(self._data_df.shape[1]):
+                        cursor.execute(INSERT_INPUT_DATA_CELL_QUERY,
+                                        (last_file_id, # file id
+                                        i, # row id
+                                        j, # col id
+                                        list(self._data_df.iloc[i,j][:32]), # time_values list
+                                        list(self._data_df.iloc[i,j][32:]), # amplitude_values list
+                                        self._defects_df.iloc[i,j])) # defect_depth
+        conn.commit()
+        conn.close()
+                
     
     def _get_df_from_defects_file(self):
         """Read data file like "*_defects.csv" and returns
@@ -50,11 +92,17 @@ class PipeDataCsvWorker(PipeData):
                string (describes 2D values array) to 1D float numpy array of 64 items"""
             num_pars = re.findall(r'(-?[0-9]+(\.[0-9]+)*):(-?[0-9]+(\.[0-9]+)*)', df_cell_value)
             num_pars = np.array([[item[0], item[2]] for item in num_pars]).astype(float)
+            
             if num_pars.size == 0:
                 return np.zeros((64))
-            num_pars = np.pad(num_pars, ((0,32 % num_pars.shape[0]),(0,0)), constant_values=(0))
             
-            return np.concatenate((num_pars[:,0], num_pars[:,1]), axis=0)
+            time_vals = num_pars[:,0]
+            amp_vals = num_pars[:,1]
+
+            time_vals = np.pad(time_vals, (0, abs(time_vals.size-32)), constant_values=(0))
+            amp_vals = np.pad(amp_vals, (0, abs(amp_vals.size-32)), constant_values=(0))
+            
+            return np.concatenate((time_vals, amp_vals), axis=0)
     
         df = pd.read_csv(self.path_to_data_file, delimiter=';').astype(str)
         df = df.drop(['position'], axis=1)
