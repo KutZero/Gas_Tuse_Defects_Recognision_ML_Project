@@ -1,3 +1,3 @@
-NAME = "custom modules"
+NAME = "custom_modules"
 
-from .PipeData import *
+from .pipe_data import *
