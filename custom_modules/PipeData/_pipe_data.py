@@ -53,7 +53,7 @@ class PipeData:
         """
         assert not self._extend is None, '_extend parameter is not initialized'
 
-        self.reset_dfs_to_original()
+        #self.reset_dfs_to_original()
         self._data_df = dfut.extend_df_for_crops_dividing(self._data_df, 
                                                            crop_size, crop_step)
         self._defects_df = dfut.extend_df_for_crops_dividing(self._defects_df, 
@@ -86,7 +86,7 @@ class PipeData:
         assert not self._data_df is None, '_data_df parameter is not initialized'
         assert not self._defects_df is None, '_defects_df parameter is not initialized'
         
-        self.reset_dfs_to_original()
+        #self.reset_dfs_to_original()
         
         extend_dims = crop_size - 1
 
