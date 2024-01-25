@@ -98,7 +98,10 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
         raise ValueError("The crop_size should be grater than or equal to 1")
     if crop_step < 1:
         raise ValueError("The crop_step should be grater than or equal to 1")
-    
+
+    print('||||||||||||||||||')
+    print('extend_df_for_crops_dividing')
+    print('input df shape: ', df.shape, end=' -> ')
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
@@ -106,7 +109,9 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
         df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
     if new_cols != crop_step:
         df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
-        
+    
+    print('output shape: ', df.shape)
+    print('||||||||||||||||||\n')
     return df
 
 def extend_df_for_prediction(df, crop_size: int, crop_step: int) -> pd.DataFrame:
@@ -159,10 +164,14 @@ def extend_df_for_prediction(df, crop_size: int, crop_step: int) -> pd.DataFrame
         raise ValueError("The crop_size should be grater than or equal to 1")
     if crop_step < 1:
         raise ValueError("The crop_step should be grater than or equal to 1")
-    
+
+    print('||||||||||||||||||')
+    print('extend_df_for_prediction')
+    print('input df shape: ', df.shape, end=' -> ')
     extend_dims = crop_size - 1
     
     df = pd.concat([df.iloc[:,-1*extend_dims:], df, df.iloc[:,:extend_dims]],axis=1)
     df = pd.concat([df.iloc[extend_dims:0:-1,:], df, df.iloc[-2:-extend_dims-2:-1,:]],axis=0)
-    
+    print('output shape: ', df.shape)
+    print('||||||||||||||||||\n')
     return df

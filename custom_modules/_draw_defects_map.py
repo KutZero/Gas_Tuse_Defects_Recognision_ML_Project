@@ -3,9 +3,9 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 
-def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame):
+def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, **kwargs):
     data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
-    draw_defects_map(data_df, title='Кол-во 0 значений в считанном датафрейме из данных детекторов')
+    draw_defects_map(data_df, **kwargs)
     
 
 def draw_defects_map(y_df: pd.DataFrame, 

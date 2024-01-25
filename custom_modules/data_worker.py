@@ -376,7 +376,6 @@ def split_def_and_non_def_data(x_time: np.ndarray,
 
     print('y_mask_def shape: ', y_mask_def.shape)
     print('y_mask_non_def shape: ', y_mask_non_def.shape)
-    print()
 
     print('||||||||||||||||||\n')
 
@@ -509,8 +508,6 @@ def split_data_to_train_val_datasets(arr: np.ndarray,
     print('Result arr_train shape: ', arr_train.shape)
     print('Result arr_val shape: ', arr_val.shape)
 
-    print('')
-
     print('||||||||||||||||||\n')
 
     return arr_train, arr_val
@@ -550,7 +547,7 @@ def _calculate_crops_with_defects_positions(y_arr: np.ndarray,
 
     defects_nums = np.array(defects_nums, dtype='bool')
 
-    print(f'For  {y_arr.shape[0]} crops of size: {crop_size}',
+    print(f'For {y_arr.shape[0]} crops of size: {crop_size}',
           f'there are {np.sum(defects_nums)} defect crops', sep='\n')
     print('||||||||||||||||||\n')
 
@@ -578,7 +575,7 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
                              else [0, 0] for item in num_pars]).astype(float)
     
     if num_pars.size == 0:
-        print(f'Got wrong input df cell str value:{df_cell_value}')
+        #print(f'Got wrong input df cell str value:{df_cell_value}')
         return np.zeros((64))
 
     if num_pars.shape[0] > 32:
