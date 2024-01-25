@@ -560,19 +560,29 @@ def _get_df_from_defects_file(path_to_defects_file: str) -> pd.DataFrame:
 
 def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> np.ndarray:
     """Converte all data cells values from given pandas dataframe from
-       string (describes 2D values array) to 1D float numpy array of 64 items"""
-    num_pars = re.findall(r'(-?[0-9]+(\.[0-9]+)*):(-?[0-9]+(\.[0-9]+)*)', df_cell_value)
-    num_pars = np.array([[item[0], item[2]] for item in num_pars]).astype(float)
+    string (describes 2D values array) to 1D float numpy array of 64 items"""
+    num_pars = re.findall(r'(-?\d+(\.\d+)*)*\s*:\s*(-?\d+(\.\d+)*)*', df_cell_value)
+    for item in num_pars:
+        if not item[0] or not item[2]:
+            print(f"""Got input df cell str with uncompleted time-amplitude value pars.
+            The uncomplited pars replaced with zeros pars.
+            Input str: {df_cell_value}""")
+            break
+    num_pars = np.array([[item[0], item[2]] if item[0] and item[2] 
+                             else [0, 0] for item in num_pars]).astype(float)
     
     if num_pars.size == 0:
+        print(f'Got wrong input df cell str value:{df_cell_value}')
         return np.zeros((64))
+
+    if num_pars.shape[0] > 32:
+        raise ValueError(f'Too much time-amplitude values pars in a cell. Got: {num_pars.shape[0]}. Max: 32')
     
     time_vals = num_pars[:,0]
     amp_vals = num_pars[:,1]
-
+    
     time_vals = np.pad(time_vals, (0, abs(time_vals.size-32)), constant_values=(0))
     amp_vals = np.pad(amp_vals, (0, abs(amp_vals.size-32)), constant_values=(0))
-    
     return np.concatenate((time_vals, amp_vals), axis=0)
 
 def _get_df_from_data_file(path_to_data_file: str) -> pd.DataFrame:
