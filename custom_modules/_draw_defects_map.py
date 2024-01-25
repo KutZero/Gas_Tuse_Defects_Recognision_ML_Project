@@ -83,8 +83,11 @@ def draw_defects_map(y_df: pd.DataFrame,
         xlocs, xlabel_paddings, xlabels = _calc_labels_and_locs(cols, x_ticks_step)
         ylocs, ylabel_paddings, ylabels = _calc_labels_and_locs(indexes, y_ticks_step)
         
-        ax.pcolormesh(y_df)
+        map = ax.pcolormesh(y_df)
 
+        cbar = fig.colorbar(map)
+        cbar.ax.tick_params(labelsize=20)
+        
         ax.set_xticks(xlocs, xlabels)
         ax.set_yticks(ylocs, ylabels)
 
