@@ -43,6 +43,8 @@ def get_x_and_y_data(path_to_data_file: str,
         about defects depths and locations for data_df
         
     """
+    print('||||||||||||||||||')
+    print('Original data reading')
     _is_path_correct(path_to_data_file)
     _is_path_correct(path_to_defects_file)
     _is_path_correct(path_to_pipe_file)
@@ -68,6 +70,10 @@ def get_x_and_y_data(path_to_data_file: str,
         base_df.iloc[row_min:row_max+1,detector_min:data_df.shape[1]] = fea_depth
         base_df.iloc[row_min:row_max+1,:detector_max+1] = fea_depth
     defects_df = base_df
+
+    print(f'Read detectors data shape: {data_df.shape}')
+    print(f'Read defect data shape: {defects_df.shape}')
+    print('||||||||||||||||||\n')
     return data_df, defects_df
 
 # кропы массива pandas имеют размер (PREP_image_size, PREP_image_size)
