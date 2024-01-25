@@ -3,7 +3,12 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 
-def draw_defects_map(y_df, 
+def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame):
+    data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
+    draw_defects_map(data_df, title='Кол-во 0 значений в считанном датафрейме из данных детекторов')
+    
+
+def draw_defects_map(y_df: pd.DataFrame, 
              title: str = 'Развернутая карта дефектов',
              xlabel: str = 'Номер датчика', 
              ylabel: str = 'Номер измерения',
