@@ -106,13 +106,6 @@ def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
     return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
         for j in range(x.shape[1])],axis=1)
 
-
-# приведение к виду, который принимают на вход слои Conv2D
-# (batch, channels, rows, cols) если data_format='channels_first'
-# (batch, rows, cols, channels) если data_format='channels_last'
-# тут выбран последний формат
-# а так как "изображения" состоят из 64 измерений, то
-# каналов либо 64, либо по 32
 def reshape_x_df_to_image_like_numpy(df: pd.DataFrame, 
                                      crop_size: int, 
                                      crop_step: int = 0) -> tuple[np.ndarray, np.ndarray]:
@@ -176,6 +169,9 @@ def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
     Slice the df with data got from specialists about defects depths and locations 
     with square sliging window of size crop_size and step crop_step and return numpy 
     array of slised crops with 1 data channel - defect depth for each cell of the crop.
+    Input df shape: (rows, cols, channel(defect depth)) 
+        -> output shape: (batch, rows, cols, channel(defect depth)) 
+
 
     Parameters
     ----------
