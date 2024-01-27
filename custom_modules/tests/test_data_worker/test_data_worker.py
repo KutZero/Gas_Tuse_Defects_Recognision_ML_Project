@@ -19,11 +19,49 @@ from contextlib import nullcontext as does_not_raise
 class Test_get_x_and_y_data:
     pass
 
-class Test_df_to_image_like_numpy:
-    pass
+class Test__df_to_image_like_numpy:
+    def test_correct_input(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]})
+        res = np.array([[[1.,2.],[5.,6.]],
+                        [[3.,4.],[7.,8.]]])
+        assert (_df_to_image_like_numpy(input_df) == res).all()
 
-class Test_reshape_df_for_future_crops:
-    pass
+    @pytest.mark.parametrize(
+        'input_df, expectation',
+        [
+            (pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': ['test_string', np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [np.array([1.,2.]), 32], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [[1,2,3,4], np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), None]}), pytest.raises(TypeError)),
+        ]
+    )
+    def test_uncorrect_input_cell_value_is_not_numpy_array(self, input_df, expectation):
+        with expectation:
+            assert _df_to_image_like_numpy(input_df)
+
+    def test_uncorrect_input_cell_value_is_not_flat_numpy_array(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                              'col2': [np.array([[5.,6.]]), np.array([7.,8.])]})
+        with pytest.raises(ValueError):
+            _df_to_image_like_numpy(input_df)
+    
+    def test_uncorrect_input_cell_value_is_numpy_array_with_not_float_values(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                                 'col2': [np.array([5,6]), np.array([7.,8.])]})
+        with pytest.raises(TypeError):
+            _df_to_image_like_numpy(input_df)
+
+@pytest.fixture()
+def test_df():
+    df = pd.DataFrame({'col1': [1,2,3,4], 
+                       'col2': [5,6,7,8],
+                       'col3': [9,10,11,12]})
+    return df
 
 class Test_reshape_x_df_to_image_like_numpy:
     pass
