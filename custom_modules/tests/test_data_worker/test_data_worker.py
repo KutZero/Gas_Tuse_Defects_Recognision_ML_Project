@@ -273,7 +273,7 @@ class Test__get_df_from_data_file:
 def csv_file_path(tmpdir_factory):
     df = pd.DataFrame({'col1': [1, 2, 1], 
                        'col2': [3, 4, 1],
-                       'col2': [5, 6, 1]}) 
+                       'col3': [5, 6, 1]}) 
     filename = str(tmpdir_factory.mktemp('data').join('file.csv'))
     df.to_csv(filename)
     return filename
