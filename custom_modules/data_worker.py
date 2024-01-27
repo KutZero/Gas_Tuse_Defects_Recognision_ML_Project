@@ -106,49 +106,6 @@ def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
     return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
         for j in range(x.shape[1])],axis=1)
 
-def reshape_df_for_future_crops(df: pd.DataFrame, crop_size: int, crop_step: int) -> pd.DataFrame:
-    """
-    Expend df for rows and cols that it can be divided by sliding square window of 
-    size crop_size and step crop_step (for rows and cols). Rows and cols are added
-    as mirrored ones.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The pandas dataframe with data got from detectors
-    crop_size : int
-        The dimension size of the square sliding window
-    crop_step : int
-        The step of the square sliding window
-
-    Returns
-    -------
-    out : pandas.DataFrame
-        The extended pandas dataframe
-    
-    """
-    print('||||||||||||||||||')
-    print('Df reshaping for exact splitting with crop_size')
-    print('Original df size: ', df.shape)
-    print('Crop windows height/width: ', crop_size)
-    print('Crop windows step across rows and cols: ', crop_step)
-
-    new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
-    new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
-
-    if new_rows != crop_step:
-        df = pd.concat([df,
-                        df.iloc[-1:-new_rows-1:-1]],
-                        axis=0,ignore_index=True)
-    if new_cols != crop_step:
-        df = pd.concat([df,
-                        df.iloc[:,-1:-new_cols-1:-1]],
-                        axis=1,ignore_index=True)
-
-    print('New df shape: ', df.shape)
-    print('||||||||||||||||||\n')
-
-    return df
 
 # приведение к виду, который принимают на вход слои Conv2D
 # (batch, channels, rows, cols) если data_format='channels_first'

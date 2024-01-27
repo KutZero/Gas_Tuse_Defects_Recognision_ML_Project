@@ -1,5 +1,5 @@
 from custom_modules.data_worker import get_x_and_y_data, \
-    _df_to_image_like_numpy, reshape_df_for_future_crops, \
+    _df_to_image_like_numpy, \
     reshape_x_df_to_image_like_numpy, reshape_y_df_to_image_like_numpy, \
     normalize_data, standartize_data, split_def_and_non_def_data, \
     create_binary_arr_from_mask_arr, augment_data, \
