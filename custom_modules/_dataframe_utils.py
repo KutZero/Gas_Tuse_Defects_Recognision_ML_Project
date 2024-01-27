@@ -94,14 +94,23 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
     if not isinstance(crop_step, int):
         raise TypeError("The crop_step should be int")
 
-    if crop_size < 1:
-        raise ValueError("The crop_size should be grater than or equal to 1")
-    if crop_step < 1:
-        raise ValueError("The crop_step should be grater than or equal to 1")
+    if crop_size < 1 or crop_step < 1:
+        raise ValueError("""Crop step and crop size must be positive""")
+    
+    if crop_size > df.shape[0] or crop_size > df.shape[1]:
+        raise ValueError("""Crop size should be less than 
+        or equal to rows and cols of the input dataframe""")
+
+    if crop_step > df.shape[0] or crop_step > df.shape[1]:
+        raise ValueError("""Crop size should be less than 
+        or equal to rows and cols of the input dataframe""")
 
     print('||||||||||||||||||')
-    print('extend_df_for_crops_dividing')
-    print('input df shape: ', df.shape, end=' -> ')
+    print('Df reshaping for exact splitting with crop_size')
+    print(f'{crop_size=}')
+    print(f'{crop_step=}')
+    print('input df shape: ', df.shape)
+    
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
@@ -109,8 +118,8 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
         df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
     if new_cols != crop_step:
         df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
-    
-    print('output shape: ', df.shape)
+        
+    print('output df shape: ', df.shape)
     print('||||||||||||||||||\n')
     return df
 
