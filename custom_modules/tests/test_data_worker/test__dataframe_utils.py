@@ -21,7 +21,7 @@ def test_input_df():
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,3,4])
+                      index=[0,1,2,3])
     return df
 
 class Test_extend_df_for_crops_dividing:
@@ -34,7 +34,7 @@ class Test_extend_df_for_crops_dividing:
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,3,4])),
+                      index=[0,1,2,3])),
 
         # add rows only
         (3, 2, pd.DataFrame(data=[[1,2,3],
@@ -43,7 +43,7 @@ class Test_extend_df_for_crops_dividing:
                             [10,11,12],
                             [7,8,9]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,3,4,3])),
+                      index=[0,1,2,3,2])),
 
         # add cols only
         (2, 2, pd.DataFrame(data=[[1,2,3,2],
@@ -51,7 +51,7 @@ class Test_extend_df_for_crops_dividing:
                             [7,8,9,8],
                             [10,11,12,11]], 
                       columns=['col1','col2','col3','col2'],
-                      index=[0,1,3,4])),
+                      index=[0,1,2,3])),
 
         # add rows and cols
         (2, 3, pd.DataFrame(data=[[1,2,3,2,1],
@@ -60,7 +60,7 @@ class Test_extend_df_for_crops_dividing:
                             [10,11,12,11,10],
                             [7,8,9,8,7]], 
                       columns=['col1','col2','col3','col2','col1'],
-                      index=[0,1,3,4,3])),
+                      index=[0,1,2,3,2])),
     ]
     )
     def test_correct_input_extend_principle(self, test_input_df, crop_size, crop_step, res):
