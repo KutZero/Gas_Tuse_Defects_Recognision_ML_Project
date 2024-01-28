@@ -57,7 +57,35 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     return pd.DataFrame(data=df_values, index=df_indexes, 
                         columns=df_columns)
 
-def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: int) -> pd.DataFrame:
+def _extend_df_decorator(func):
+    """The decorator for pandas dataframe extending functions"""
+    def wrapper(df, **kwargs):
+        """The wrapper for funcitons that checks input correctness
+        and print some technical information"""
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError("The df should be pandas.Dataframe")
+        for key, value in kwargs.items():
+            if not isinstance(value, int):
+                raise TypeError(f"The {key} should be int")
+            if value < 1:
+                raise ValueError(f"The {key} must be positive")
+            if value > df.shape[0] or value > df.shape[1]:
+                raise ValueError(f"""The {key} should be less than 
+                or equal to rows and cols of the input dataframe""")
+
+        print('|'*20)
+        print(func.__name__)
+        print(f'Input df.shape: {df.shape}')
+        for key, value in kwargs.items():
+            print(f'{key}: {value}')
+        res_df = func(df, **kwargs)
+        print(f'Output df.shape: {res_df.shape}')
+        print('|'*20)
+        return res_df
+    return wrapper
+
+@_extend_df_decorator
+def extend_df_for_crops_dividing(df: pd.DataFrame, *, crop_size: int, crop_step: int) -> pd.DataFrame:
     """
     Extend the df for exact crops dividing by a determined crop window with
     a determined cropping step.
@@ -76,41 +104,7 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
     out : pandas.DataFrame
         Output extended dataframe.
         
-    Raises
-    ------
-    TypeError
-        1. If the df is not pandas.Dataframe type.
-        2. If the crop_size is not int type.
-        3. If the crop_step is not int type.
-    ValueError
-        1. If the crop_size is less than 1.
-        2. If the crop_step is less than 1.
-        
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("The df should be pandas.Dataframe")
-    if not isinstance(crop_size, int):
-        raise TypeError("The crop_size should be int")
-    if not isinstance(crop_step, int):
-        raise TypeError("The crop_step should be int")
-
-    if crop_size < 1 or crop_step < 1:
-        raise ValueError("""Crop step and crop size must be positive""")
-    
-    if crop_size > df.shape[0] or crop_size > df.shape[1]:
-        raise ValueError("""Crop size should be less than 
-        or equal to rows and cols of the input dataframe""")
-
-    if crop_step > df.shape[0] or crop_step > df.shape[1]:
-        raise ValueError("""Crop size should be less than 
-        or equal to rows and cols of the input dataframe""")
-
-    print('||||||||||||||||||')
-    print('Df reshaping for exact splitting with crop_size')
-    print(f'{crop_size=}')
-    print(f'{crop_step=}')
-    print('input df shape: ', df.shape)
-    
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
@@ -119,11 +113,10 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: int, crop_step: in
     if new_cols != crop_step:
         df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
         
-    print('output df shape: ', df.shape)
-    print('||||||||||||||||||\n')
     return df
 
-def extend_df_for_prediction(df, crop_size: int, crop_step: int) -> pd.DataFrame:
+@_extend_df_decorator
+def extend_df_for_prediction(df: pd.DataFrame, *, crop_size: int) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
     training quantity. 
@@ -151,36 +144,17 @@ def extend_df_for_prediction(df, crop_size: int, crop_step: int) -> pd.DataFrame
     out : pd.DataFrame
         Output extended dataframe.
         
-    Raises
-    ------
-    TypeError
-        1. If the df is not pandas.Dataframe type.
-        2. If the crop_size is not int type.
-        3. If the crop_step is not int type.
-    ValueError
-        1. If the crop_size is less than 1.
-        2. If the crop_step is less than 1.
-        
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("The df should be pandas.Dataframe")
-    if not isinstance(crop_size, int):
-        raise TypeError("The crop_size should be int")
-    if not isinstance(crop_step, int):
-        raise TypeError("The crop_step should be int")
+    df_values = df.to_numpy()
+    df_indexes = df.index.to_numpy()
+    df_columns = df.columns.to_numpy()
 
-    if crop_size < 1:
-        raise ValueError("The crop_size should be grater than or equal to 1")
-    if crop_step < 1:
-        raise ValueError("The crop_step should be grater than or equal to 1")
-
-    print('||||||||||||||||||')
-    print('extend_df_for_prediction')
-    print('input df shape: ', df.shape, end=' -> ')
-    extend_dims = crop_size - 1
+    df_values = np.pad(df_values, ((crop_size-1, crop_size-1),(0, 0)), 'reflect')
+    df_values = np.pad(df_values, ((0, 0),(crop_size-1, crop_size-1)), 'wrap')
     
-    df = pd.concat([df.iloc[:,-1*extend_dims:], df, df.iloc[:,:extend_dims]],axis=1)
-    df = pd.concat([df.iloc[extend_dims:0:-1,:], df, df.iloc[-2:-extend_dims-2:-1,:]],axis=0)
-    print('output shape: ', df.shape)
-    print('||||||||||||||||||\n')
+    df_indexes = np.pad(df_indexes, crop_size-1, 'reflect')
+    df_columns = np.pad(df_columns, crop_size-1, 'wrap')
+    
+    df = pd.DataFrame(data=df_values, index=df_indexes, columns=df_columns)
+    
     return df
