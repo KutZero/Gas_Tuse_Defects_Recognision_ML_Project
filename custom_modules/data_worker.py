@@ -262,7 +262,7 @@ def standartize_data(arr: np.ndarray) -> np.ndarray:
     print(f'arr_max before standartize: {arr.max()}')
     print(f'arr_min before standartize: {arr.min()}')
 
-    arr = arr / arr.max()
+    arr = np.divide(arr, arr.max(), out=np.zeros_like(arr), where=arr.max()!=0)
 
     print(f'arr_max after standartize: {arr.max()}')
     print(f'arr_min after standartize: {arr.min()}')
