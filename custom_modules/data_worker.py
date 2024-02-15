@@ -346,20 +346,29 @@ def split_def_and_non_def_data(x_time: np.ndarray,
 
 def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     """
-    Create binary array from the y_mask array that store crops data
+    Create binary array from the y_mask array of shape 
+    (batch, rows, cols, channel) that store crops data
     got from specialist about defect depths and locations.
 
     Parameters
     ----------
     y_mask : numpy.ndarray
-        The numpy array with defect depths values
+        The numpy array with defect depths values of shape
+        (batch, rows, cols, channel)
 
     Returns
     -------
     y_binary : numpy.ndarray
-        The numpy array with binary values for each crop 
+        The flat numpy array with binary values for each crop 
     
     """
+    if not isinstance(y_mask, np.ndarray):
+        raise TypeError('Mask array should be numpy array')
+    if y_mask.ndim != 4:
+        raise ValueError('Mask arr should have (batch, rows, cols, channel) shape')
+    if not np.issubdtype(y_mask.dtype, np.number):
+        raise ValueError('Mask arr shoul store numeric values')
+    
     print('||||||||||||||||||')
     print('Y binary arr from Y mask arr creation')
     print('Y mask arr shape: ', y_mask.shape)

@@ -79,7 +79,30 @@ class Test_split_def_and_non_def_data:
     pass
 
 class Test_create_binary_arr_from_mask_arr:
-    pass
+    def test_correct_input(self):
+        # 3 masks of size 2*2 and 1 color channel
+        input = np.array([[
+                    [[1.],[2.]],[[3.],[4.]]],
+                    [[[0],[0.]],[[0],[0]]],
+                    [[[9.],[10.]],[[11.],[12.]]]])
+        
+        res = np.array([True, False, True])
+        assert (create_binary_arr_from_mask_arr(input) == res).all()
+    
+    def test_uncorrect_input_value_type(self):
+        with pytest.raises(TypeError):
+            create_binary_arr_from_mask_arr('string')
+            
+    def test_uncorrect_input_array_shape(self):
+        input = np.array([[1,2],[3,4]])
+        with pytest.raises(ValueError):
+            create_binary_arr_from_mask_arr(input)
+
+    def test_uncorrect_input_array_dtype(self):
+        input = np.array([[
+            [['1'],['2.']],[['3.'],['4.']]]])
+        with pytest.raises(ValueError):
+            create_binary_arr_from_mask_arr(input)
 
 class Test_augment_data:
     pass
