@@ -2,7 +2,7 @@ from custom_modules.data_worker import get_x_and_y_data, \
     _df_to_image_like_numpy, \
     reshape_x_df_to_image_like_numpy, reshape_y_df_to_image_like_numpy, \
     normalize_data, standartize_data, split_def_and_non_def_data, \
-    create_binary_arr_from_mask_arr, augment_data, \
+    create_binary_arr_from_mask_arr, create_depth_arr_from_mask_arr, augment_data, \
     split_data_to_train_val_datasets, _calculate_crops_with_defects_positions, \
     _get_df_from_defects_file, _split_cell_string_value_to_numpy_array_of_64_values, \
     _get_df_from_data_file, _is_path_correct
@@ -103,6 +103,32 @@ class Test_create_binary_arr_from_mask_arr:
             [['1'],['2.']],[['3.'],['4.']]]])
         with pytest.raises(ValueError):
             create_binary_arr_from_mask_arr(input)
+
+class Test_create_depth_arr_from_mask_arr:
+    def test_correct_input(self):
+        # 3 masks of size 2*2 and 1 color channel
+        input = np.array([[
+                    [[1.],[2.]],[[3.],[4.]]],
+                    [[[0],[0.]],[[0],[0]]],
+                    [[[9.],[10.]],[[11.],[12.]]]])
+        
+        res = np.array([4., 0., 12.])
+        assert (create_depth_arr_from_mask_arr(input) == res).all()
+    
+    def test_uncorrect_input_value_type(self):
+        with pytest.raises(TypeError):
+            create_depth_arr_from_mask_arr('string')
+            
+    def test_uncorrect_input_array_shape(self):
+        input = np.array([[1,2],[3,4]])
+        with pytest.raises(ValueError):
+            create_depth_arr_from_mask_arr(input)
+
+    def test_uncorrect_input_array_dtype(self):
+        input = np.array([[
+            [['1'],['2.']],[['3.'],['4.']]]])
+        with pytest.raises(ValueError):
+            create_depth_arr_from_mask_arr(input)
 
 class Test_augment_data:
     pass

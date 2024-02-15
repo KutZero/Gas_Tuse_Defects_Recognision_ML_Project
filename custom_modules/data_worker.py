@@ -387,6 +387,47 @@ def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
 
     return y_binary
 
+def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
+    """
+    Create max depth array from the y_mask array of shape 
+    (batch, rows, cols, channel) that store crops data
+    got from specialist about defect depths and locations.
+
+    Parameters
+    ----------
+    y_mask : numpy.ndarray
+        The numpy array with defect depths values of shape
+        (batch, rows, cols, channel)
+
+    Returns
+    -------
+    y_binary : numpy.ndarray
+        The flat numpy array with max depth values for each crop 
+    
+    """
+    if not isinstance(y_mask, np.ndarray):
+        raise TypeError('Mask array should be numpy array')
+    if y_mask.ndim != 4:
+        raise ValueError('Mask arr should have (batch, rows, cols, channel) shape')
+    if not np.issubdtype(y_mask.dtype, np.number):
+        raise ValueError('Mask arr shoul store numeric values')
+    
+    print('||||||||||||||||||')
+    print('Y depth arr from Y mask arr creation')
+    print('Y mask arr shape: ', y_mask.shape)
+    # Найдем на каких картинках есть дефекты
+    y_depth = list()
+    for i in range(y_mask.shape[0]):
+        y_depth.append(np.max(y_mask[i]))
+
+    y_depth = np.array(y_depth)
+
+    print('Y depth arr shape: ', y_depth.shape)
+    print('||||||||||||||||||\n')
+
+    return y_depth
+
+
 def augment_data(arr: np.ndarray) -> np.ndarray:
     """
     Augnment data of the arr which store crops data.
