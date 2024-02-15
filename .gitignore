@@ -5,3 +5,4 @@ __pycache__/
 .vs
 .pytest_cache
 *.h5
+data/report/
