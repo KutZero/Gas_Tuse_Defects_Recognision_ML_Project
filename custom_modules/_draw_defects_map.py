@@ -102,9 +102,14 @@ def draw_defects_map(df: pd.DataFrame, /,
 
         ax.set_xticklabels(xtext_labels) 
         ax.set_yticklabels(ytext_labels) 
-        
-    plt.show()
 
+    if path_to_save is None:
+        plt.show()
+    else:
+        plt.savefig(path_to_save, bbox_inches='tight')
+    plt.close()
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
     """Add fillers between sorted (0 to max) numpy array of int or float"""
     if i > arr.shape[0]-2:
