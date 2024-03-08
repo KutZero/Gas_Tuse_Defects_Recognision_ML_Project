@@ -2,23 +2,30 @@ import pandas as pd
 import numpy as np
 import re
 import matplotlib.pyplot as plt
+from pydantic import ValidationError, validate_call, PositiveInt
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, **kwargs):
     data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
     draw_defects_map(data_df, **kwargs)
     
-
-def draw_defects_map(y_df: pd.DataFrame, 
-             title: str = 'Развернутая карта дефектов',
-             xlabel: str = 'Номер датчика', 
-             ylabel: str = 'Номер измерения',
-             x_ticks_step: int = 50,
-             y_ticks_step: int = 20):
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def draw_defects_map(df: pd.DataFrame, /,
+                        title: str = 'Развернутая карта дефектов',
+                        xlabel: str = 'Номер датчика', 
+                        ylabel: str = 'Номер измерения',
+                        x_ticks_step: PositiveInt = 50,
+                        y_ticks_step: PositiveInt = 20,
+                        plt_style_context: str = 'default',
+                        path_to_save: str = None):
     """
     Draw a defects map from the readed data.
     
     Parameters
     ----------
+    df: pd.DataFrame
+        The dataframe of size detectors num * rows
+        with defect depth values in cells.
     title :str, optional
         The titile of the defects map.
     xlabel : str, optional
@@ -29,38 +36,26 @@ def draw_defects_map(y_df: pd.DataFrame,
         The x ticks step (approximate).
     y_ticks_step : int, optional
         The y ticks step (approximate).
-
+    plt_style_context: str, optional
+        The param for matplotlib.pyplot.style.context()
+        
     Raises
     ------
-    TypeError
-        1. If the title is not str type.
-        2. If the xlabel is not str type.
-        3. If the ylabel is not str type.
-        4. If the x_ticks_step is not int type.
-        5. If the y_ticks_step is not int type.
+    pydantic.ValidationError
+        1. If the df is not pd.DataFrame type.
+        2. If the title is not str type.
+        3. If the xlabel is not str type.
+        4. If the ylabel is not str type.
+        5. If the x_ticks_step is not int type.
+        6. If the y_ticks_step is not int type.
+        7. If the plt_style_context is not str type.
     ValueError
         1. If the x_ticks_step is less than 1.
         2. If the y_ticks_step is less than 1.
 
     """
-
-    if not isinstance(title, str):
-        raise TypeError("The title should be str")
-    if not isinstance(xlabel, str):
-        raise TypeError("The xlabel should be str")
-    if not isinstance(ylabel, str):
-        raise TypeError("The ylabel should be str")
-    if not isinstance(x_ticks_step, int):
-        raise TypeError("The x_ticks_step should be str")
-    if not isinstance(y_ticks_step, int):
-        raise TypeError("The y_ticks_step should be str")
-
-    if x_ticks_step < 1:
-        raise ValueError("The x_ticks_step should be grater than or equal to 1")
-    if y_ticks_step < 1:
-        raise ValueError("The y_ticks_step should be grater than or equal to 1")
-        
-    with plt.style.context('dark_background'):
+    
+    with plt.style.context(plt_style_context):
         fig, ax = plt.subplots()
     
         fig.set_figwidth(18)
@@ -76,14 +71,14 @@ def draw_defects_map(y_df: pd.DataFrame,
         ax.tick_params(axis='both', labelsize = 20)
         
         # get columns and indexes list of int type
-        cols = [re.search('[0-9]+', col)[0] for col in y_df.columns.to_numpy()]
+        cols = [re.search('[0-9]+', col)[0] for col in df.columns.to_numpy()]
         cols = np.array(cols).astype(int)
-        indexes = y_df.index.to_numpy().astype(int)
+        indexes = df.index.to_numpy().astype(int)
         
         xlocs, xlabel_paddings, xlabels = _calc_labels_and_locs(cols, x_ticks_step)
         ylocs, ylabel_paddings, ylabels = _calc_labels_and_locs(indexes, y_ticks_step)
         
-        map = ax.pcolormesh(y_df)
+        map = ax.pcolormesh(df)
 
         cbar = fig.colorbar(map)
         cbar.ax.tick_params(labelsize=20)
@@ -117,7 +112,8 @@ def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
     if arr[i+1] - arr[i] >= 1.5 * step:
         arr = np.insert(arr,i+1,arr[i]+step)
     return _add_index_fillers(arr, step, i+1)
-    
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _cals_labels_paddings(locs: np.ndarray, step: int=1):
     """Calc labels paddings for avoid labels overlapping"""
     label_paddings = np.zeros(locs.shape)
@@ -126,7 +122,8 @@ def _cals_labels_paddings(locs: np.ndarray, step: int=1):
             label_paddings[i] = 1
     return label_paddings
 
-def _calc_labels_and_locs(arr: np.ndarray, step=1):
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _calc_labels_and_locs(arr: np.ndarray, step: int=1):
     """Calc locs and labels for matplotlib graph"""
     locs = np.sort(np.unique(np.concatenate(
                     [np.where((arr == min(arr)) | (arr == max(arr)))[0],
