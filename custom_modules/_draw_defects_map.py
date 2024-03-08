@@ -2,15 +2,65 @@ import pandas as pd
 import numpy as np
 import re
 import matplotlib.pyplot as plt
+
+from matplotlib import ticker
+from matplotlib.patches import Polygon as mplPolygon
+from shapely.geometry import Polygon as shPolygon
+from shapely.ops import unary_union
 from pydantic import ValidationError, validate_call, PositiveInt
+
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, **kwargs):
     data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
     draw_defects_map(data_df, **kwargs)
+
+def draw_defects_map(*args, **kwargs):
+    """
+    Draw a defects map from the readed data.
+    """
+    _build_defects_map(*args, **kwargs)
+    if 'path_to_save' in kwargs.keys():
+        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
+    else:
+         plt.show()
+    plt.close()
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFrame, **kwargs):
+    """
+    Draw a defects map from the readed data with reference map owerlapption.
+    """
+    fig, ax = _build_defects_map(df, **kwargs)
+    
+    # Get pixel position above the threshold
+    Y, X = np.where(ref_df.to_numpy() > 0)
+    positions = np.dstack((X, Y))[0]
+    
+    # Create a rectangle per position and merge them.
+    rectangles = [shPolygon([xy, xy + [1, 0], xy + [1, 1], xy + [0, 1]]) for xy in positions]
+    polygons = unary_union(rectangles)
+    
+    # Shapely will return either a Polygon or a MultiPolygon. 
+    # Make sure the structure is the same in any case.
+    if polygons.geom_type == "Polygon":
+        polygons = [polygons]
+    else:
+        polygons = polygons.geoms
+    
+    # Add the matplotlib Polygon patches
+    for polygon in polygons:
+        ax.add_patch(mplPolygon(polygon.exterior.coords, fc='crimson'))
+        
+    if 'path_to_save' in kwargs.keys():
+        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
+    else:
+         plt.show()
+    plt.close()
+
     
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_defects_map(df: pd.DataFrame, /,
+def _build_defects_map(df: pd.DataFrame, /,
                         title: str = 'Развернутая карта дефектов',
                         xlabel: str = 'Номер датчика', 
                         ylabel: str = 'Номер измерения',
@@ -38,21 +88,6 @@ def draw_defects_map(df: pd.DataFrame, /,
         The y ticks step (approximate).
     plt_style_context: str, optional
         The param for matplotlib.pyplot.style.context()
-        
-    Raises
-    ------
-    pydantic.ValidationError
-        1. If the df is not pd.DataFrame type.
-        2. If the title is not str type.
-        3. If the xlabel is not str type.
-        4. If the ylabel is not str type.
-        5. If the x_ticks_step is not int type.
-        6. If the y_ticks_step is not int type.
-        7. If the plt_style_context is not str type.
-    ValueError
-        1. If the x_ticks_step is less than 1.
-        2. If the y_ticks_step is less than 1.
-
     """
     
     with plt.style.context(plt_style_context):
@@ -102,12 +137,7 @@ def draw_defects_map(df: pd.DataFrame, /,
 
         ax.set_xticklabels(xtext_labels) 
         ax.set_yticklabels(ytext_labels) 
-
-    if path_to_save is None:
-        plt.show()
-    else:
-        plt.savefig(path_to_save, bbox_inches='tight')
-    plt.close()
+    return fig, ax
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
