@@ -60,13 +60,15 @@ def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFra
 
     
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def _build_defects_map(df: pd.DataFrame, /,
+def _build_defects_map(df: pd.DataFrame, 
+                        /,
                         title: str = 'Развернутая карта дефектов',
                         xlabel: str = 'Номер датчика', 
                         ylabel: str = 'Номер измерения',
                         x_ticks_step: PositiveInt = 50,
                         y_ticks_step: PositiveInt = 20,
                         plt_style_context: str = 'default',
+                        *,
                         path_to_save: str = None):
     """
     Draw a defects map from the readed data.
