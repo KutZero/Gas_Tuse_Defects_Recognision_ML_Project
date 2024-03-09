@@ -9,7 +9,7 @@ import os
 import matplotlib.pyplot as plt
 
 from contextlib import nullcontext as does_not_raise
-
+from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator
 
 class Test_roll_df:
     pass
@@ -35,7 +35,27 @@ class Test_extend_df_for_crops_dividing:
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])),
-
+        # nothing
+        ('3', 1, pd.DataFrame(data=[[1,2,3],
+                            [4,5,6],
+                            [7,8,9],
+                            [10,11,12]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])),
+        # nothing
+        (3, '1', pd.DataFrame(data=[[1,2,3],
+                            [4,5,6],
+                            [7,8,9],
+                            [10,11,12]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])),
+        # nothing
+        ('3', '1', pd.DataFrame(data=[[1,2,3],
+                            [4,5,6],
+                            [7,8,9],
+                            [10,11,12]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])),
         # add rows only
         (3, 2, pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
@@ -95,21 +115,21 @@ class Test_extend_df_for_crops_dividing:
     'input_df, crop_size, crop_step, expectation',
     [
         # df is not pandas.DataFrame
-        ('sdfsdf', 5, 1, pytest.raises(TypeError)),
+        ('sdfsdf', 5, 1, pytest.raises(ValidationError)),
         # crop_size is not int
         (pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,2,3]), '2', 1, pytest.raises(TypeError)),
+                      index=[0,1,2,3]), '2grg', 1, pytest.raises(ValidationError)),
         # crop_step in not int
         (pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,2,3]), 2, 'reger', pytest.raises(TypeError))
+                      index=[0,1,2,3]), 2, 'reger', pytest.raises(ValidationError))
     ]
     )
     def test_uncorrect_input_values_type(self, input_df, crop_size, crop_step, expectation):
@@ -166,14 +186,14 @@ class Test_extend_df_for_prediction:
     'input_df, crop_size, expectation',
     [
         # df is not pandas.DataFrame
-        ('sdfsdf', 2, pytest.raises(TypeError)),
+        ('sdfsdf', 2, pytest.raises(ValidationError)),
         # crop_size is not int
         (pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,2,3]), '2', pytest.raises(TypeError))
+                      index=[0,1,2,3]), 'gfg2', pytest.raises(ValidationError))
     ]
     )
     def test_uncorrect_input_values_type(self, input_df, crop_size, expectation):

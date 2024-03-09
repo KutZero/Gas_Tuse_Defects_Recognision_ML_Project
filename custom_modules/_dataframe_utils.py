@@ -1,6 +1,12 @@
 import pandas as pd
 import numpy as np
 
+from typing_extensions import Annotated
+from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
+
+PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     """
     Roll a dataframe like numpy.roll method.
@@ -30,18 +36,12 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
         have only 2 dimensions).
         
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("The df should be pandas.Dataframe")
-    if not isinstance(shift, int):
-        raise TypeError("The shift should be int")
-    if not isinstance(axis, int):
-        raise TypeError("The axis should be int")
-
+    if not axis in (0,1):
+        raise ValueError("""The axis should be 0 or 1 because only row 
+        wise of col wise rolling supported""")
+    
     if shift == 0:
         return df
-
-    if not axis in (0,1):
-        raise ValueError("The axis should be 0 or 1")
     
     df_values = df.to_numpy()
     df_indexes = df.index.to_numpy()
@@ -59,20 +59,10 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
 
 def _extend_df_decorator(func):
     """The decorator for pandas dataframe extending functions"""
-    def wrapper(df, **kwargs):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def wrapper(df: pd.DataFrame, **kwargs):
         """The wrapper for funcitons that checks input correctness
         and print some technical information"""
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError("The df should be pandas.Dataframe")
-        for key, value in kwargs.items():
-            if not isinstance(value, int):
-                raise TypeError(f"The {key} should be int")
-            if value < 1:
-                raise ValueError(f"The {key} must be positive")
-            if value > df.shape[0] or value > df.shape[1]:
-                raise ValueError(f"""The {key} should be less than 
-                or equal to rows and cols of the input dataframe""")
-
         print('|'*20)
         print(func.__name__)
         print(f'Input df.shape: {df.shape}')
@@ -85,7 +75,8 @@ def _extend_df_decorator(func):
     return wrapper
 
 @_extend_df_decorator
-def extend_df_for_crops_dividing(df: pd.DataFrame, *, crop_size: int, crop_step: int) -> pd.DataFrame:
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def extend_df_for_crops_dividing(df: pd.DataFrame, *, crop_size: PositiveInt, crop_step: PositiveInt) -> pd.DataFrame:
     """
     Extend the df for exact crops dividing by a determined crop window with
     a determined cropping step.
@@ -105,6 +96,10 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, *, crop_size: int, crop_step:
         Output extended dataframe.
         
     """
+    if min([crop_size, crop_step]) > min(df.shape):
+        raise ValueError("""Crop size and crop step should be bigger or equal
+        than the given df less axis""")
+        
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
@@ -116,7 +111,8 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, *, crop_size: int, crop_step:
     return df
 
 @_extend_df_decorator
-def extend_df_for_prediction(df: pd.DataFrame, *, crop_size: int) -> pd.DataFrame:
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def extend_df_for_prediction(df: pd.DataFrame, *, crop_size: PositiveInt) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
     training quantity. 
@@ -145,6 +141,10 @@ def extend_df_for_prediction(df: pd.DataFrame, *, crop_size: int) -> pd.DataFram
         Output extended dataframe.
         
     """
+    if crop_size > min(df.shape):
+        raise ValueError("""Crop size should be bigger or equal
+        than the given df less axis""")
+    
     df_values = df.to_numpy()
     df_indexes = df.index.to_numpy()
     df_columns = df.columns.to_numpy()
