@@ -19,6 +19,13 @@ from typing import Union
 from ._draw_defects_map import draw_defects_map, draw_defects_map_with_reference_owerlap, draw_zeros_quantity_in_data_df
 from ._dataframe_utils import roll_df, extend_df_for_crops_dividing, extend_df_for_prediction 
 
+from typing_extensions import Annotated
+from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
+
+PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
+PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def get_x_and_y_data(path_to_data_file: str,
                      path_to_defects_file: str,
                      path_to_pipe_file: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -45,9 +52,6 @@ def get_x_and_y_data(path_to_data_file: str,
     """
     print('||||||||||||||||||')
     print('Original data reading')
-    _is_path_correct(path_to_data_file)
-    _is_path_correct(path_to_defects_file)
-    _is_path_correct(path_to_pipe_file)
     
     data_df = _get_df_from_data_file(path_to_data_file)
     defects_df = _get_df_from_defects_file(path_to_defects_file)
@@ -85,6 +89,8 @@ def _check_df_cell_is_correct_numpy_array(cell_value):
     if not isinstance(cell_value[0].item(), float):
         raise TypeError(f'Every numpy array in the dataframe should store float values, but got: {cell_value.dtype}')
 
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
     """
     Reshape df with numpy.array in each cell of 64 items
@@ -106,9 +112,11 @@ def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
     return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
         for j in range(x.shape[1])],axis=1)
 
-def reshape_x_df_to_image_like_numpy(df: pd.DataFrame, 
-                                     crop_size: int, 
-                                     crop_step: int = 0) -> tuple[np.ndarray, np.ndarray]:
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def reshape_x_df_to_image_like_numpy(df: pd.DataFrame, *,
+                                     crop_size: PositiveInt, 
+                                     crop_step: PositiveInt = 0) -> tuple[np.ndarray, np.ndarray]:
     """
     Slice the df with data got from detectors with square sliging window of size 
     crop_size and step crop_step and return 2 numpy arrays. The first one - array 
@@ -144,7 +152,7 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
 
     if crop_step == 0:
         crop_step = crop_size
-
+    
     temp = np.concatenate([np.stack(
         [_df_to_image_like_numpy(
             df.iloc[i:i+crop_size,j:j+crop_size])
@@ -162,9 +170,10 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
 
     return (x_time, x_amp)
 
-def reshape_y_df_to_image_like_numpy(df: pd.DataFrame, 
-                                     crop_size: int, 
-                                     crop_step: int = 0) -> np.ndarray:
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def reshape_y_df_to_image_like_numpy(df: pd.DataFrame, *,
+                                     crop_size: PositiveInt, 
+                                     crop_step: PositiveInt = 0) -> np.ndarray:
     """
     Slice the df with data got from specialists about defects depths and locations 
     with square sliging window of size crop_size and step crop_step and return numpy 
@@ -211,6 +220,7 @@ def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
 
     return res
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def normalize_data(arr: np.ndarray) -> np.ndarray:
     """
     Normalize the arr to (0-1) borders.
@@ -240,6 +250,7 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
     
     return arr
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def standartize_data(arr: np.ndarray) -> np.ndarray:
     """
     Standartize the arr so it max value less or equal than 1
@@ -270,10 +281,11 @@ def standartize_data(arr: np.ndarray) -> np.ndarray:
     
     return arr
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def split_def_and_non_def_data(x_time: np.ndarray, 
                                x_amp: np.ndarray, 
                                y_mask: np.ndarray, 
-                               crop_size: int) -> tuple[tuple[np.ndarray, np.ndarray],
+                               crop_size: PositiveInt) -> tuple[tuple[np.ndarray, np.ndarray],
                                                         tuple[np.ndarray, np.ndarray],
                                                         tuple[np.ndarray, np.ndarray]]:
     """
@@ -344,6 +356,8 @@ def split_def_and_non_def_data(x_time: np.ndarray,
             (x_amp_def, x_amp_non_def),
             (y_mask_def, y_mask_non_def))
 
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     """
     Create binary array from the y_mask array of shape 
@@ -387,6 +401,8 @@ def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
 
     return y_binary
 
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     """
     Create max depth array from the y_mask array of shape 
@@ -426,8 +442,8 @@ def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     print('||||||||||||||||||\n')
 
     return y_depth
-
-
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def augment_data(arr: np.ndarray) -> np.ndarray:
     """
     Augnment data of the arr which store crops data.
@@ -482,8 +498,10 @@ def augment_data(arr: np.ndarray) -> np.ndarray:
     print('||||||||||||||||||\n')
     return arr
 
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def split_data_to_train_val_datasets(arr: np.ndarray, 
-                                     val_percent: float) -> tuple[np.ndarray, np.ndarray]:
+                                     val_percent: PercentFloat) -> tuple[np.ndarray, np.ndarray]:
     """
     Split data of the arr of numpy arrays where each array store some part of
     defects filtered by some parameter. For example for numpy arrays of time
@@ -527,8 +545,9 @@ def split_data_to_train_val_datasets(arr: np.ndarray,
 # вернет бинарную 1D маску, где 1 - для кропов с дефектами
 # 0 - для кропов без дефектов
 # delete crop_size from arguments
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _calculate_crops_with_defects_positions(y_arr: np.ndarray, 
-                                            crop_size: int) -> np.ndarray:
+                                            crop_size: PositiveInt) -> np.ndarray:
     """
     Got the y_mask array that store crops data got from specialist 
     about defect depths and locations and return 1 dimension binary
@@ -564,6 +583,7 @@ def _calculate_crops_with_defects_positions(y_arr: np.ndarray,
 
     return defects_nums
 
+@validate_call
 def _get_df_from_defects_file(path_to_defects_file: str) -> pd.DataFrame:
     """Read data file like "*_defects.csv" and returns
        pandas dataframe with preprocessed data from it"""
@@ -572,6 +592,7 @@ def _get_df_from_defects_file(path_to_defects_file: str) -> pd.DataFrame:
     df = pd.read_csv(path_to_defects_file, delimiter=';')
     return df[using_columns]
 
+@validate_call
 def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> np.ndarray:
     """Converte all data cells values from given pandas dataframe from
     string (describes 2D values array) to 1D float numpy array of 64 items"""
@@ -599,6 +620,7 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
     amp_vals = np.pad(amp_vals, (0, abs(amp_vals.size-32)), constant_values=(0))
     return np.concatenate((time_vals, amp_vals), axis=0)
 
+@validate_call
 def _get_df_from_data_file(path_to_data_file: str) -> pd.DataFrame:
     """Read data file like "*_data.csv" and returns
        pandas dataframe with preprocessed data from it"""
@@ -607,31 +629,3 @@ def _get_df_from_data_file(path_to_data_file: str) -> pd.DataFrame:
     df = df.set_index('row')
     df = df.map(_split_cell_string_value_to_numpy_array_of_64_values)
     return df
-
-def _is_path_correct(path: str) -> bool:
-    """
-    Check is the path correct
-    
-    Parameters
-    ----------
-    path: str
-        The path to a .csv file.
-        
-    Returns
-    -------
-    out : bool
-        True if the path is correct and locates to an existing file.
-        
-    Raises
-    ------
-    TypeError
-        1. If the path is not str type.
-    ValueError
-        1. If the path is not exist or don't locate to a .csv file.
-
-    """
-    if not type(path) is str:
-        raise TypeError("A path should be str")
-    if not os.path.isfile(path) or not path.endswith('.csv'):
-        raise ValueError("A path is not exist or don't not locate to a .csv file")
-    return True

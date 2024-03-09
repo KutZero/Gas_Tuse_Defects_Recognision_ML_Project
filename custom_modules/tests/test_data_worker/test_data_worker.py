@@ -5,7 +5,7 @@ from custom_modules.data_worker import get_x_and_y_data, \
     create_binary_arr_from_mask_arr, create_depth_arr_from_mask_arr, augment_data, \
     split_data_to_train_val_datasets, _calculate_crops_with_defects_positions, \
     _get_df_from_defects_file, _split_cell_string_value_to_numpy_array_of_64_values, \
-    _get_df_from_data_file, _is_path_correct
+    _get_df_from_data_file
 
 import pytest
 import pandas as pd
@@ -15,6 +15,7 @@ import os
 import matplotlib.pyplot as plt
 
 from contextlib import nullcontext as does_not_raise
+from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
 class Test_get_x_and_y_data:
     pass
@@ -90,7 +91,7 @@ class Test_create_binary_arr_from_mask_arr:
         assert (create_binary_arr_from_mask_arr(input) == res).all()
     
     def test_uncorrect_input_value_type(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             create_binary_arr_from_mask_arr('string')
             
     def test_uncorrect_input_array_shape(self):
@@ -116,7 +117,7 @@ class Test_create_depth_arr_from_mask_arr:
         assert (create_depth_arr_from_mask_arr(input) == res).all()
     
     def test_uncorrect_input_value_type(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValidationError):
             create_depth_arr_from_mask_arr('string')
             
     def test_uncorrect_input_array_shape(self):
@@ -326,24 +327,6 @@ def csv_file_path(tmpdir_factory):
     filename = str(tmpdir_factory.mktemp('data').join('file.csv'))
     df.to_csv(filename)
     return filename
-
-# test _is_path_correct func
-class Test__is_path_correct:
-    @pytest.mark.parametrize(
-        'path, res, expectation',
-        [
-            (2, False, pytest.raises(TypeError)),
-            ('data/data', False, pytest.raises(ValueError)),
-            ('datrhtrhrtht', False, pytest.raises(ValueError)),
-            ('data/data/file.csv', False, pytest.raises(ValueError)),
-        ]
-    )
-    def test_without_file(self, path, res, expectation):
-        with expectation:
-            assert _is_path_correct(path) == res
-
-    def test_with_file(self, csv_file_path):
-        assert _is_path_correct(csv_file_path) == True 
 
 if __name__ == "__main__":
     pytest.main()
