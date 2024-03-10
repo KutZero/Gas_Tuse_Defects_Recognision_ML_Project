@@ -25,6 +25,42 @@ from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator
 PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
 PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
 
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def calc_model_prediction_accuracy(pred_df: pd.DataFrame, 
+                                   ref_df: pd.DataFrame,
+                                   use_defect_depth: bool = False):
+    """
+    Calc model prediciton loss by dividing model prediction map from
+    reference map. Then calc it summ and normalize it by dividing on df.shape[0] *
+    df.shape[1]. So in ideal case you will get 0, what means that the model is 
+    100% accurate. In the other hand the 1 output means that the model is awful
+
+    Parameters
+    ----------
+    pred_df : pd.DataFrame
+        The pandas dataframe with prediction map.
+    ref_df : pd.DataFrame
+        The pandas dataframe with reference map.
+    use_defect_depth : bool
+        The flag. If true defect zones in ref_df will store defect depth info.
+        If false all defect zones will store value "1".
+
+    Returns
+    ----------
+    model_loss: float
+        The model test loss.
+    
+    """
+    if not use_defect_depth:
+        ref_df = ref_df.map(lambda x: 1 if x > 0 else 0)
+    
+    pred_arr = normalize_data(pred_df.to_numpy())
+    ref_arr = normalize_data(ref_df.to_numpy())
+
+    return np.sum(np.abs(pred_arr - ref_arr)) / (ref_df.shape[0] * ref_df.shape[1])
+    
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def get_x_and_y_data(path_to_data_file: str,
                      path_to_defects_file: str,
@@ -114,7 +150,7 @@ def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def reshape_x_df_to_image_like_numpy(df: pd.DataFrame, *,
+def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
                                      crop_size: PositiveInt, 
                                      crop_step: PositiveInt = 0) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -171,7 +207,7 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame, *,
     return (x_time, x_amp)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def reshape_y_df_to_image_like_numpy(df: pd.DataFrame, *,
+def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
                                      crop_size: PositiveInt, 
                                      crop_step: PositiveInt = 0) -> np.ndarray:
     """
