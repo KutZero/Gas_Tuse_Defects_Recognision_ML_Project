@@ -29,7 +29,7 @@ PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def calc_model_prediction_accuracy(pred_df: pd.DataFrame, 
                                    ref_df: pd.DataFrame,
-                                   use_defect_depth: bool = False):
+                                   use_defect_depth: bool = False) -> float:
     """
     Calc model prediciton loss by dividing model prediction map from
     reference map. Then calc it summ and normalize it by dividing on df.shape[0] *
