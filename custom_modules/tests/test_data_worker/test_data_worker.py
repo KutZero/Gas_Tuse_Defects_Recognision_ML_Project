@@ -1,7 +1,7 @@
-from custom_modules.data_worker import get_x_and_y_data, \
+from custom_modules.data_worker.data_worker import get_x_and_y_data, \
     _df_to_image_like_numpy, calc_model_prediction_accuracy, \
     reshape_x_df_to_image_like_numpy, reshape_y_df_to_image_like_numpy, \
-    normalize_data, standartize_data, split_def_and_non_def_data, \
+    normalize_data, standardize_data, split_def_and_non_def_data, \
     create_binary_arr_from_mask_arr, create_depth_arr_from_mask_arr, augment_data, \
     split_data_to_train_val_datasets, _calculate_crops_with_defects_positions, \
     _get_df_from_defects_file, _split_cell_string_value_to_numpy_array_of_64_values, \
@@ -76,7 +76,7 @@ class Test_reshape_y_df_to_image_like_numpy:
 class Test_normalize_data:
     pass
 
-class Test_standartize_data:
+class Test_standardize_data:
     pass
 
 class Test_split_def_and_non_def_data:

@@ -1,4 +1,4 @@
-from custom_modules._dataframe_utils import roll_df, \
+from custom_modules.data_worker._dataframe_utils import roll_df, \
     extend_df_for_crops_dividing, extend_df_for_prediction
 
 import pytest

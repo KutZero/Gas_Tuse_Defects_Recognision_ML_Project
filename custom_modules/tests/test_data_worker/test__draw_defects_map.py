@@ -1,4 +1,4 @@
-from custom_modules._draw_defects_map import draw_defects_map, \
+from custom_modules.data_worker._draw_defects_map import draw_defects_map, \
     _add_index_fillers, _cals_labels_paddings, _calc_labels_and_locs
 
 import pytest

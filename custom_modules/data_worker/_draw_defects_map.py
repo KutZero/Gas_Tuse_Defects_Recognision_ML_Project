@@ -5,6 +5,7 @@
 2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
 3) В общем виде: "help([Имя модуля].[Имя функции])".
 """
+import logging
 import pandas as pd
 import numpy as np
 import re
@@ -15,6 +16,9 @@ from matplotlib.patches import Polygon as mplPolygon
 from shapely.geometry import Polygon as shPolygon
 from shapely.ops import unary_union
 from pydantic import ValidationError, validate_call, PositiveInt
+
+# create logger
+logger = logging.getLogger('main.'+__name__)
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
