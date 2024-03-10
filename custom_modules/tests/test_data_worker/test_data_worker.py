@@ -1,5 +1,5 @@
 from custom_modules.data_worker import get_x_and_y_data, \
-    _df_to_image_like_numpy, \
+    _df_to_image_like_numpy, calc_model_prediction_accuracy, \
     reshape_x_df_to_image_like_numpy, reshape_y_df_to_image_like_numpy, \
     normalize_data, standartize_data, split_def_and_non_def_data, \
     create_binary_arr_from_mask_arr, create_depth_arr_from_mask_arr, augment_data, \
@@ -18,6 +18,9 @@ from contextlib import nullcontext as does_not_raise
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
 class Test_get_x_and_y_data:
+    pass
+
+class Test_calc_model_prediction_accuracy:
     pass
 
 class Test__df_to_image_like_numpy:

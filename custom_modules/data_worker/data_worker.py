@@ -16,9 +16,6 @@ import os
 import matplotlib.pyplot as plt
 from typing import Union
 
-from ._draw_defects_map import draw_defects_map, draw_defects_map_with_reference_owerlap, draw_zeros_quantity_in_data_df
-from ._dataframe_utils import roll_df, extend_df_for_crops_dividing, extend_df_for_prediction 
-
 from typing_extensions import Annotated
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 

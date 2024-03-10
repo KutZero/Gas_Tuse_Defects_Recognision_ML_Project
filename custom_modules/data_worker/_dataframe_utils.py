@@ -1,3 +1,10 @@
+"""
+Более подробнаую информацию можно получить так:
+
+1) В Jupyter Notebook: "?[Имя модуля].[Имя функции]";
+2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
+3) В общем виде: "help([Имя модуля].[Имя функции])".
+"""
 import pandas as pd
 import numpy as np
 
@@ -5,6 +12,7 @@ from typing_extensions import Annotated
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
 PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
+
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
