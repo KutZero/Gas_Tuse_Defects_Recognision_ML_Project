@@ -86,7 +86,6 @@ def get_x_and_y_data(path_to_data_file: str,
         about defects depths and locations for data_df
         
     """
-    
     data_df = _get_df_from_data_file(path_to_data_file)
     defects_df = _get_df_from_defects_file(path_to_defects_file)
     # create defects depths mask
@@ -178,11 +177,6 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
         The numpy array of crops with amplitudes values
     
     """
-    logger.debug(f"""
-    The input df shape: {df.shape}
-    The crop size: {crop_size}
-    The crop step: {crop_step}""")
-
     if crop_step == 0:
         crop_step = crop_size
     
@@ -198,6 +192,9 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
     x_amp = temp[:,:,:,32:]
 
     logger.debug(f"""
+    The input df shape: {df.shape}
+    The crop size: {crop_size}
+    The crop step: {crop_step}
     The output time array of crops shape: {x_time.shape}
     The output amplitude array of crops shape: {x_amp.shape}""")
     return (x_time, x_amp)
@@ -229,11 +226,6 @@ def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
         The numpy array of crops with defect depths values
     
     """
-    logger.debug(f"""
-    The input df shape: {df.shape}
-    The crop size: {crop_size}
-    The crop step: {crop_step}""")
-    
     if crop_step == 0:
         crop_step = crop_size
 
@@ -246,6 +238,9 @@ def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
 
     res = np.expand_dims(res,axis=3)
     logger.debug(f"""
+    The input df shape: {df.shape}
+    The crop size: {crop_size}
+    The crop step: {crop_step}
     The output defect depth array of crops shape: {res.shape}""")
 
     return res
@@ -266,13 +261,14 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with normalized some float values
     
     """
-    logger.debug(f"""
-    The arr max before normalization: {arr.max()}
-    The arr min before normalization: {arr.min()}""")
+    max_val = arr.max()
+    min_val = arr.min()
 
-    arr = (arr - arr.min()) / (arr.max() - arr.min())
+    arr = (arr - min_val) / (max_val - min_val)
 
     logger.debug(f"""
+    The arr max before normalization: {max_val}
+    The arr min before normalization: {min_val}
     The arr max after normalization: {arr.max()}
     The arr min after normalization: {arr.min()}""")
 
@@ -295,13 +291,14 @@ def standardize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with standartized some float values
     
     """
-    logger.debug(f"""
-    The arr max before standardization: {arr.max()}
-    The arr min before standardization: {arr.min()}""")
+    max_val = arr.max()
+    min_val = arr.min()
+    
+    arr = np.divide(arr, max_val, out=np.zeros_like(arr), where=max_val!=0)
 
-    arr = np.divide(arr, arr.max(), out=np.zeros_like(arr), where=arr.max()!=0)
-
     logger.debug(f"""
+    The arr max before standardization: {max_val}
+    The arr min before standardization: {min_val}
     The arr max after standardization: {arr.max()}
     The arr min after standardization: {arr.min()}""")
     
@@ -346,12 +343,6 @@ def split_def_and_non_def_data(x_time: np.ndarray,
         The numpy array with crops data with defect depths values refer to non defect zone
     
     """
-    logger.debug(f"""
-    The input time array of crops shape: {x_time.shape}
-    The input amplitude array of crops shape: {x_amp.shape}
-    The input defect depth array of crops shape: {y_mask.shape}""")
-
-    # удалим кропы не содержищие дефекты
     defects_nums = _calculate_crops_with_defects_positions(y_mask, crop_size)
 
     x_time_def = x_time[defects_nums]
@@ -363,14 +354,13 @@ def split_def_and_non_def_data(x_time: np.ndarray,
     y_mask_non_def = y_mask[~defects_nums]
 
     logger.debug(f"""
+    The input time array of crops shape: {x_time.shape}
+    The input amplitude array of crops shape: {x_amp.shape}
+    The input defect depth array of crops shape: {y_mask.shape}
     The output time array of crops refer to defects shape: {x_time_def.shape}
-    The output time array of crops do not refer to defects shape: {x_time_non_def.shape}""")
-
-    logger.debug(f"""
+    The output time array of crops do not refer to defects shape: {x_time_non_def.shape}
     The output amplitude array of crops refer to defects shape: {x_amp_def.shape}
-    The output amplitude array of crops do not refer to defects shape: {x_amp_non_def.shape}""")
-
-    logger.debug(f"""
+    The output amplitude array of crops do not refer to defects shape: {x_amp_non_def.shape}
     The output defect depth array of crops refer to defects shape: {y_mask_def.shape}
     The output defect depth array of crops do not refer to defects shape: {y_mask_non_def.shape}""")
 
@@ -405,8 +395,6 @@ def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     if not np.issubdtype(y_mask.dtype, np.number):
         raise ValueError('Mask arr shoul store numeric values')
     
-    logger.debug(f"""
-    The input defect depth array of crops shape: {y_mask.shape}""")
     # Найдем на каких картинках есть дефекты
     y_binary = list()
     for i in range(y_mask.shape[0]):
@@ -418,6 +406,7 @@ def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     y_binary = np.array(y_binary, dtype='bool')
 
     logger.debug(f"""
+    The input defect depth array of crops shape: {y_mask.shape}
     The output flat defect binary array shape: {y_mask.shape}""")
 
     return y_binary
@@ -449,9 +438,6 @@ def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     if not np.issubdtype(y_mask.dtype, np.number):
         raise ValueError('Mask arr shoul store numeric values')
     
-    logger.debug(f"""
-    The input defect depth array of crops shape: {y_mask.shape}""")
-    
     # Найдем на каких картинках есть дефекты
     y_depth = list()
     for i in range(y_mask.shape[0]):
@@ -460,6 +446,7 @@ def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
     y_depth = np.array(y_depth)
 
     logger.debug(f"""
+    The input defect depth array of crops shape: {y_mask.shape}
     The output flat defect depth array shape: {y_mask.shape}""")
 
     return y_depth
@@ -482,24 +469,24 @@ def augment_data(arr: np.ndarray) -> np.ndarray:
         The augmented numpy array with crops data
     
     """
-    logger.debug(f"""
-    The input array of crops shape: {arr.shape}""")
+    message = """The input array of crops shape: {arr.shape}"""
 
     arr = np.concatenate([arr,
                             np.rot90(arr,1,[1,2]),
                             np.rot90(arr,2,[1,2]),
                             np.rot90(arr,3,[1,2])],axis=0)
-    logger.debug(f"""
-    The array after 4 steps of 90 degree rotation: {arr.shape}""")
+    message += f"""
+    The array after 4 steps of 90 degree rotation: {arr.shape}"""
 
     arr = np.concatenate([arr,np.flip(arr,2)],axis=0)
-    logger.debug(f"""
-    The array after horizontal full mirroring: {arr.shape}""")
+    message += f"""
+    The array after horizontal full mirroring: {arr.shape}"""
 
     arr = np.concatenate([arr,np.flip(arr,1)],axis=0)
-    logger.debug(f"""
-    The array after vertical full mirroring: {arr.shape}""")
+    message += f"""
+    The array after vertical full mirroring: {arr.shape}"""
 
+    logger.debug(message)
     '''arr = np.concatenate([arr,np.roll(arr,int(arr.shape[1]/2),axis=1)],axis=0)
 
     print('||||||||||||\nAfter vertical half shifting')
@@ -538,15 +525,11 @@ def split_data_to_train_val_datasets(arr: list[np.ndarray],
         he numpy with validation dataset part of data
     
     """
-
-    for item in arr:
-        logger.debug(f"""
-        The input array shape: {item.shape}""")
-
     arr_train = np.concatenate([item[int(item.shape[0] * val_percent):] for item in arr], axis=0)
     arr_val = np.concatenate([item[:int(item.shape[0] * val_percent)] for item in arr], axis=0)
 
     logger.debug(f"""
+    The input array shapes: {[item.shape for item in arr]}
     The output train array shape: {arr_train.shape}
     The output validation array shape: {arr_val.shape}""")
 
