@@ -6,3 +6,4 @@ __pycache__/
 .pytest_cache
 *.h5
 data/report/
+*.png
