@@ -55,8 +55,8 @@ def calc_model_prediction_accuracy(pred_df: pd.DataFrame,
     if not use_defect_depth:
         ref_df = ref_df.map(lambda x: 1 if x > 0 else 0)
     
-    pred_arr = normalize_data(pred_df.to_numpy())
-    ref_arr = normalize_data(ref_df.to_numpy())
+    pred_arr = pred_df.to_numpy()
+    ref_arr = ref_df.to_numpy()
 
     return np.sum(np.abs(pred_arr - ref_arr)) / (ref_df.shape[0] * ref_df.shape[1])
     
