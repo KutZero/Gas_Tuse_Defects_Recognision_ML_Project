@@ -469,7 +469,8 @@ def augment_data(arr: np.ndarray) -> np.ndarray:
         The augmented numpy array with crops data
     
     """
-    message = """The input array of crops shape: {arr.shape}"""
+    message = """
+    The input array of crops shape: {arr.shape}"""
 
     arr = np.concatenate([arr,
                             np.rot90(arr,1,[1,2]),
