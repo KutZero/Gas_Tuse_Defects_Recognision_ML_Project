@@ -16,6 +16,7 @@ import custom_modules.data_worker as dw
 
 os.environ["ROCM_PATH"] = "/opt/rocm"
 os.environ["MLIR_CRASH_REPRODUCER_DIRECTORY"] = "enable"
+os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
 # create logger
 logger = logging.getLogger('main')
