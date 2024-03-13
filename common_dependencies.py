@@ -14,6 +14,7 @@ from matplotlib import ticker
 #import custom_modules.pipe_data as pidf
 import custom_modules.data_worker as dw
 
+os.environ["ROCM_PATH"] = "/opt/rocm"
 # create logger
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
