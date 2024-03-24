@@ -25,6 +25,14 @@ PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def get_crop_generator(arr: np.ndarray, crop_size: int, crop_step: int):
+    """
+    Creates generator for sliding window across arr with given step and crop size
+    """
+    for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
+        for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
+            yield arr[i:i+crop_size, j:j+crop_size]
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def calc_model_prediction_accuracy(pred_df: pd.DataFrame, 
