@@ -124,7 +124,7 @@ def _check_df_cell_is_correct_numpy_array(cell_value):
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def _df_to_image_like_numpy(df: pd.DataFrame) -> np.ndarray:
+def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     """
     Reshape df with numpy.array in each cell of 64 items
     to numpy array of shape (df.shape[0], df.shape[1], 64)
@@ -181,7 +181,7 @@ def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
         crop_step = crop_size
     
     temp = np.concatenate([np.stack(
-        [_df_to_image_like_numpy(
+        [df_to_numpy(
             df.iloc[i:i+crop_size,j:j+crop_size])
              for i in range(0,df.shape[0] - crop_size + 1, crop_step)]
                 , axis=0) for j in range(0,df.shape[1] - crop_size + 1, crop_step)]
