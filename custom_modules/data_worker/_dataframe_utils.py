@@ -90,6 +90,8 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_
         Output extended dataframe.
         
     """
+    message = f"""
+    The input df shape: {df.shape}"""
     if min([crop_size, crop_step]) > min(df.shape):
         raise ValueError("""Crop size and crop step should be bigger or equal
         than the given df less axis""")
@@ -102,8 +104,7 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_
     if new_cols != crop_step:
         df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
 
-    logger.debug(f"""
-    The input df shape: {df.shape}
+    logger.debug(f"""{message}
     The crop size: {crop_size}
     The crop step: {crop_step}
     The output df shape: {df.shape}""")
@@ -140,6 +141,8 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt) -> pd.Dat
         Output extended dataframe.
         
     """
+    message = f"""
+    The input df shape: {df.shape}"""
     if crop_size > min(df.shape):
         raise ValueError("""Crop size should be bigger or equal
         than the given df less axis""")
@@ -156,8 +159,7 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt) -> pd.Dat
     
     df = pd.DataFrame(data=df_values, index=df_indexes, columns=df_columns)
 
-    logger.debug(f"""
-    The input df shape: {df.shape}
+    logger.debug(f"""{message}
     The crop size: {crop_size}
     The output df shape: {df.shape}""")
     
