@@ -15,6 +15,7 @@ import re
 import os
 import matplotlib.pyplot as plt
 from typing import Union
+import itertools
 
 from typing_extensions import Annotated
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
@@ -33,6 +34,39 @@ def get_crop_generator(arr: np.ndarray, crop_size: int, crop_step: int):
     for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
         for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
             yield arr[i:i+crop_size, j:j+crop_size]
+
+def get_augmented_crop_generator(arr: np.ndarray, crop_size: int, crop_step: int) -> np.ndarray:
+    """
+    Augnment data of the arr which store crops data.
+    Used augmentations: rotation for 90 degree (4 times);
+    horizontal and vertical mirroring.
+    
+    Parameters
+    ----------
+    arr : numpy.ndarray
+        The numpy array with crops data
+    
+    Returns
+    -------
+    out : numpy.ndarray
+        The augmented numpy array with crops data
+    
+    """
+    message = f'''
+    The input array cells: {arr.shape} 
+    The crop size: {crop_size} 
+    The crop step: {crop_step}'''
+    
+    arr = np.concatenate([arr, np.flip(arr,1)],axis=0)
+    arr = np.concatenate([arr, np.flip(arr,0)],axis=0)
+
+    arr1 = np.concatenate([arr, np.rot90(arr,2,[0,1])],axis=0)
+    arr2 = np.concatenate([np.rot90(arr,1,[0,1]), np.rot90(arr,3,[0,1])],axis=1)
+
+    arrs = np.split(arr1, 8, axis=0) + np.split(arr2, 8, axis=1)
+    
+    logger.debug(message)
+    return itertools.chain(*[get_crop_generator(arr, crop_size, crop_step) for arr in arrs])
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def calc_model_prediction_accuracy(pred_df: pd.DataFrame, 
@@ -121,16 +155,6 @@ def get_x_and_y_data(path_to_data_file: str,
     Read defect data shape: {defects_df.shape}""")
     return data_df, defects_df
 
-def _check_df_cell_is_correct_numpy_array(cell_value):
-    """Check that every pandas dataframe cell is a flat numpy array of floats"""
-    if not isinstance(cell_value, np.ndarray):
-        raise TypeError(f'Every cell of the dataframe should store numpy array, but got: {type(cell_value)}')
-    if cell_value.ndim > 1:
-        raise ValueError(f'Every numpy array in the dataframe should be flat, but got shape: {cell_value.shape}')
-    if not isinstance(cell_value[0].item(), float):
-        raise TypeError(f'Every numpy array in the dataframe should store float values, but got: {cell_value.dtype}')
-
-
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     """
@@ -153,105 +177,6 @@ def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
         for j in range(x.shape[1])],axis=1)
 
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def reshape_x_df_to_image_like_numpy(df: pd.DataFrame,
-                                     crop_size: PositiveInt, 
-                                     crop_step: PositiveInt = 0) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Slice the df with data got from detectors with square sliging window of size 
-    crop_size and step crop_step and return 2 numpy arrays. The first one - array 
-    of slised crops with 32 data channels (last dimension size) where every one - 
-    value of time got from the df. The second has equal shape but store amplitude 
-    values got from the df.
-    Input df shape: (rows, cols, channels(time+amp)) 
-        -> output shape: (batch, rows, cols, channels(time)) 
-        and (batch, rows, cols, channels(amp))
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The pandas dataframe with data got from detectors
-    crop_size : int
-        The dimension size of the square sliding window
-    crop_step : int
-        The step of the square sliding window
-
-    Returns
-    -------
-    x_time : numpy.ndarray
-        The numpy array of crops with times values
-    x_amp : numpy.ndarray
-        The numpy array of crops with amplitudes values
-    
-    """
-    if crop_step == 0:
-        crop_step = crop_size
-    
-    temp = np.concatenate([np.stack(
-        [df_to_numpy(
-            df.iloc[i:i+crop_size,j:j+crop_size])
-             for i in range(0,df.shape[0] - crop_size + 1, crop_step)]
-                , axis=0) for j in range(0,df.shape[1] - crop_size + 1, crop_step)]
-                    , axis=0)
-
-    # поделим x выборку на значения времен и амплитуд
-    x_time = temp[:,:,:,:32]
-    x_amp = temp[:,:,:,32:]
-
-    logger.debug(f"""
-    The input df shape: {df.shape}
-    The crop size: {crop_size}
-    The crop step: {crop_step}
-    The output time array of crops shape: {x_time.shape}
-    The output amplitude array of crops shape: {x_amp.shape}""")
-    return (x_time, x_amp)
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def reshape_y_df_to_image_like_numpy(df: pd.DataFrame,
-                                     crop_size: PositiveInt, 
-                                     crop_step: PositiveInt = 0) -> np.ndarray:
-    """
-    Slice the df with data got from specialists about defects depths and locations 
-    with square sliging window of size crop_size and step crop_step and return numpy 
-    array of slised crops with 1 data channel - defect depth for each cell of the crop.
-    Input df shape: (rows, cols, channel(defect depth)) 
-        -> output shape: (batch, rows, cols, channel(defect depth)) 
-
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The pandas dataframe with data got from specialists about defects depths and locations
-    crop_size : int
-        The dimension size of the square sliding window
-    crop_step : int
-        The step of the square sliding window
-
-    Returns
-    -------
-    res : numpy.ndarray
-        The numpy array of crops with defect depths values
-    
-    """
-    if crop_step == 0:
-        crop_step = crop_size
-
-    res = np.concatenate([np.stack(
-        [df.iloc[i:i+crop_size,j:j+crop_size].to_numpy().astype('float32')
-             for i in range(0,df.shape[0] - crop_size + 1, crop_step)]
-                , axis=0) for j in range(0,df.shape[1] - crop_size + 1, crop_step)]
-                    , axis=0)
-
-
-    res = np.expand_dims(res,axis=3)
-    logger.debug(f"""
-    The input df shape: {df.shape}
-    The crop size: {crop_size}
-    The crop step: {crop_step}
-    The output defect depth array of crops shape: {res.shape}""")
-
-    return res
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def normalize_data(arr: np.ndarray) -> np.ndarray:
@@ -312,277 +237,14 @@ def standardize_data(arr: np.ndarray) -> np.ndarray:
     
     return arr
 
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def split_def_and_non_def_data(x_time: np.ndarray, 
-                               x_amp: np.ndarray, 
-                               y_mask: np.ndarray, 
-                               crop_size: PositiveInt) -> tuple[tuple[np.ndarray, np.ndarray],
-                                                        tuple[np.ndarray, np.ndarray],
-                                                        tuple[np.ndarray, np.ndarray]]:
-    """
-    Got 3 numpy arrays. The x_time and x_amp store crops data got from detectors.
-    The y_mask stores crops data about defects locations and depths got from specialists.
-    By this data calculate crops that describes defect zones and not and return it as
-    tuple. Where x_time are splitted for x_time_def, x_time_non_def, x_amp for 
-    x_amp_def, x_amp_non_def, y_mask for y_mask_def, y_mask_non_def.
-
-    Parameters
-    ----------
-    x_time : numpy.ndarray
-        The numpy array with time values
-    x_amp : numpy.ndarray
-        The numpy array with amplitude values
-    y_mask : numpy.ndarray
-        The numpy array with defect depths values
-
-    Returns
-    -------
-    x_time_def : numpy.ndarray
-        The numpy array with crops data with time values refer to defect zone
-    x_time_non_def : numpy.ndarray
-        The numpy array with crops data with time values refer to non defect zone
-    x_amp_def : numpy.ndarray
-        The numpy array with crops data with amplitude values refer to defect zone
-    x_amp_non_def : numpy.ndarray
-        The numpy array with crops data with amplitude values refer to non defect zone
-    y_mask_def : numpy.ndarray
-        The numpy array with crops data with defect depths values refer to defect zone
-    y_mask_non_def : numpy.ndarray
-        The numpy array with crops data with defect depths values refer to non defect zone
-    
-    """
-    defects_nums = _calculate_crops_with_defects_positions(y_mask, crop_size)
-
-    x_time_def = x_time[defects_nums]
-    x_amp_def = x_amp[defects_nums]
-    y_mask_def = y_mask[defects_nums]
-
-    x_time_non_def = x_time[~defects_nums]
-    x_amp_non_def = x_amp[~defects_nums]
-    y_mask_non_def = y_mask[~defects_nums]
-
-    logger.debug(f"""
-    The input time array of crops shape: {x_time.shape}
-    The input amplitude array of crops shape: {x_amp.shape}
-    The input defect depth array of crops shape: {y_mask.shape}
-    The output time array of crops refer to defects shape: {x_time_def.shape}
-    The output time array of crops do not refer to defects shape: {x_time_non_def.shape}
-    The output amplitude array of crops refer to defects shape: {x_amp_def.shape}
-    The output amplitude array of crops do not refer to defects shape: {x_amp_non_def.shape}
-    The output defect depth array of crops refer to defects shape: {y_mask_def.shape}
-    The output defect depth array of crops do not refer to defects shape: {y_mask_non_def.shape}""")
-
-    return ((x_time_def, x_time_non_def),
-            (x_amp_def, x_amp_non_def),
-            (y_mask_def, y_mask_non_def))
-
-    
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def create_binary_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
-    """
-    Create binary array from the y_mask array of shape 
-    (batch, rows, cols, channel) that store crops data
-    got from specialist about defect depths and locations.
-
-    Parameters
-    ----------
-    y_mask : numpy.ndarray
-        The numpy array with defect depths values of shape
-        (batch, rows, cols, channel)
-
-    Returns
-    -------
-    y_binary : numpy.ndarray
-        The flat numpy array with binary values for each crop 
-    
-    """
-    if not isinstance(y_mask, np.ndarray):
-        raise TypeError('Mask array should be numpy array')
-    if y_mask.ndim != 4:
-        raise ValueError('Mask arr should have (batch, rows, cols, channel) shape')
-    if not np.issubdtype(y_mask.dtype, np.number):
-        raise ValueError('Mask arr shoul store numeric values')
-    
-    # Найдем на каких картинках есть дефекты
-    y_binary = list()
-    for i in range(y_mask.shape[0]):
-        if np.sum(y_mask[i] > 0) >= 1:
-            y_binary.append(True)
-        else:
-            y_binary.append(False)
-
-    y_binary = np.array(y_binary, dtype='bool')
-
-    logger.debug(f"""
-    The input defect depth array of crops shape: {y_mask.shape}
-    The output flat defect binary array shape: {y_mask.shape}""")
-
-    return y_binary
-
-    
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def create_depth_arr_from_mask_arr(y_mask: np.ndarray) -> np.ndarray:
-    """
-    Create max depth array from the y_mask array of shape 
-    (batch, rows, cols, channel) that store crops data
-    got from specialist about defect depths and locations.
-
-    Parameters
-    ----------
-    y_mask : numpy.ndarray
-        The numpy array with defect depths values of shape
-        (batch, rows, cols, channel)
-
-    Returns
-    -------
-    y_binary : numpy.ndarray
-        The flat numpy array with max depth values for each crop 
-    
-    """
-    if not isinstance(y_mask, np.ndarray):
-        raise TypeError('Mask array should be numpy array')
-    if y_mask.ndim != 4:
-        raise ValueError('Mask arr should have (batch, rows, cols, channel) shape')
-    if not np.issubdtype(y_mask.dtype, np.number):
-        raise ValueError('Mask arr shoul store numeric values')
-    
-    # Найдем на каких картинках есть дефекты
-    y_depth = list()
-    for i in range(y_mask.shape[0]):
-        y_depth.append(np.max(y_mask[i]))
-
-    y_depth = np.array(y_depth)
-
-    logger.debug(f"""
-    The input defect depth array of crops shape: {y_mask.shape}
-    The output flat defect depth array shape: {y_mask.shape}""")
-
-    return y_depth
-    
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def augment_data(arr: np.ndarray) -> np.ndarray:
-    """
-    Augnment data of the arr which store crops data.
-    Used augmentations: rotation for 90 degree (4 times);
-    horizontal and vertical mirroring.
-
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The numpy array with crops data
-
-    Returns
-    -------
-    out : numpy.ndarray
-        The augmented numpy array with crops data
-    
-    """
-    message = """
-    The input array of crops shape: {arr.shape}"""
-
-    arr = np.concatenate([arr,
-                            np.rot90(arr,1,[1,2]),
-                            np.rot90(arr,2,[1,2]),
-                            np.rot90(arr,3,[1,2])],axis=0)
-    message += f"""
-    The array after 4 steps of 90 degree rotation: {arr.shape}"""
-
-    arr = np.concatenate([arr,np.flip(arr,2)],axis=0)
-    message += f"""
-    The array after horizontal full mirroring: {arr.shape}"""
-
-    arr = np.concatenate([arr,np.flip(arr,1)],axis=0)
-    message += f"""
-    The array after vertical full mirroring: {arr.shape}"""
-
-    logger.debug(message)
-    '''arr = np.concatenate([arr,np.roll(arr,int(arr.shape[1]/2),axis=1)],axis=0)
-
-    print('||||||||||||\nAfter vertical half shifting')
-    print('arr shape: ', arr.shape)
-
-    arr = np.concatenate([arr,np.roll(arr,int(arr.shape[2]/2),axis=2)],axis=0)
-
-    print('||||||||||||\nAfter horizontal half shifting')
-    print('X_time_arr shape: ', arr.shape)'''
-
-    return arr
-
-    
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def split_data_to_train_val_datasets(arr: list[np.ndarray], 
-                                     val_percent: PercentFloat) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Split data of the arr of numpy arrays where each array store some part of
-    defects filtered by some parameter. For example for numpy arrays of time
-    values where the first stores only crops desctiptions refers to defect zones,
-    and the second stores only crops desctiptions refers to non defect zones 
-    the method returns 2 arrays where the first - stores the 1-val_percent of
-    crops descriptions of each passed array and the second stores val_percent
-    of each passed array.
-
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The numpy array of numpy arrays
-
-    Returns
-    -------
-    arr_train : numpy.ndarray
-        The numpy with train dataset part of data
-    arr_val : numpy.ndarray
-        he numpy with validation dataset part of data
-    
-    """
-    arr_train = np.concatenate([item[int(item.shape[0] * val_percent):] for item in arr], axis=0)
-    arr_val = np.concatenate([item[:int(item.shape[0] * val_percent)] for item in arr], axis=0)
-
-    logger.debug(f"""
-    The input array shapes: {[item.shape for item in arr]}
-    The output train array shape: {arr_train.shape}
-    The output validation array shape: {arr_val.shape}""")
-
-    return arr_train, arr_val
-
-
-# вернет бинарную 1D маску, где 1 - для кропов с дефектами
-# 0 - для кропов без дефектов
-# delete crop_size from arguments
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def _calculate_crops_with_defects_positions(y_arr: np.ndarray, 
-                                            crop_size: PositiveInt) -> np.ndarray:
-    """
-    Got the y_mask array that store crops data got from specialist 
-    about defect depths and locations and return 1 dimension binary
-    mask where True value descripres crop that refer to defect zone,
-    False - not.
-
-    Parameters
-    ----------
-    y_arr : numpy.ndarray
-        The numpy array with defect depths values
-
-    Returns
-    -------
-    defects_nums : numpy.ndarray
-        The 1 dimension binary mask array
-    
-    """
-    # Найдем на каких картинках есть дефекты
-    defects_nums = list()
-    for i in range(y_arr.shape[0]):
-        if np.sum(y_arr[i] > 0) >= 1:
-            defects_nums.append(True)
-        else:
-            defects_nums.append(False)
-
-    defects_nums = np.array(defects_nums, dtype='bool')
-
-    logger.debug(f"""
-    For {y_arr.shape[0]} crops of size: {crop_size}
-    there are {np.sum(defects_nums)} defect crops""")
-
-    return defects_nums
+def _check_df_cell_is_correct_numpy_array(cell_value):
+    """Check that every pandas dataframe cell is a flat numpy array of floats"""
+    if not isinstance(cell_value, np.ndarray):
+        raise TypeError(f'Every cell of the dataframe should store numpy array, but got: {type(cell_value)}')
+    if cell_value.ndim > 1:
+        raise ValueError(f'Every numpy array in the dataframe should be flat, but got shape: {cell_value.shape}')
+    if not isinstance(cell_value[0].item(), float):
+        raise TypeError(f'Every numpy array in the dataframe should store float values, but got: {cell_value.dtype}')
 
 @validate_call
 def _get_df_from_defects_file(path_to_defects_file: str) -> pd.DataFrame:
