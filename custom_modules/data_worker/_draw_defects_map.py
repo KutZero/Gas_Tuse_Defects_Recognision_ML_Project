@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib import ticker
 from matplotlib.patches import Polygon as mplPolygon
+from matplotlib.patches import Rectangle
 from shapely.geometry import Polygon as shPolygon
 from shapely.ops import unary_union
 from typing_extensions import Annotated
@@ -65,6 +66,23 @@ def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFra
     # Add the matplotlib Polygon patches
     for polygon in polygons:
         ax.add_patch(mplPolygon(polygon.exterior.coords, fc='crimson', alpha=pol_alfa))
+
+    if 'path_to_save' in kwargs.keys():
+        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
+    else:
+         plt.show()
+    plt.close()
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[Rectangle], **kwargs):
+    """
+    Draw a defects map from the readed data with reference map owerlapption.
+    """
+    fig, ax = _build_defects_map(df, **kwargs)
+    
+    # Add the matplotlib Polygon patches
+    for rectangle in rectangles:
+        ax.add_patch(rectangle)
 
     if 'path_to_save' in kwargs.keys():
         plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
