@@ -737,3 +737,146 @@ def get_model_v10(crop_size: int):
     output_def_bool = Dense(1, activation='sigmoid', name='output_3_1')(d_3_7)
     
     return keras.Model([input_time, input_amp], [output_def_bool], name='model')
+
+def get_model_v11():
+    # создание архитектуры модели
+    DROP = 0.3
+    # 1 подсеть //////////////////////////////////////////////////
+    input_time = Input((4,4,32), name = 'input_time')
+    
+    conv_1_1 = Conv2D(128, (2,2), activation='relu', name='conv_1_1', padding='same')(input_time)
+    conv_1_2 = Conv2D(128, (2,2), activation='relu', name='conv_1_2', padding='same')(conv_1_1)
+    
+    conc_1_2 = concatenate([conv_1_1, conv_1_2], axis=3, name='conc_1_2')
+    conv_1_3 = Conv2D(128, (2,2), activation='relu', name='conv_1_3', padding='same')(conc_1_2)
+    
+    conv_1_4 = Conv2D(128, (2,2), activation='relu', name='conv_1_4', padding='same')(conv_1_3)
+    
+    conc_1_3 = concatenate([conv_1_3, conv_1_4], axis=3, name='conc_1_3')
+    conv_1_5 = Conv2D(128, (2,2), activation='relu', name='conv_1_5', padding='same')(conc_1_3)
+    bnorm_1_1 = Dropout(DROP)(BatchNormalization(name='bnorm_1_1')(conv_1_5))
+    pool_1_1 = MaxPooling2D((2,2), strides=2, name='pool_1_1')(bnorm_1_1)
+    
+    # 2 подсеть //////////////////////////////////////////////////
+    input_amp = Input((4,4,32), name = 'input_amp')
+    
+    conv_2_1 = Conv2D(128, (2,2), activation='relu', name='conv_2_1', padding='same')(input_amp)
+    conv_2_2 = Conv2D(128, (2,2), activation='relu', name='conv_2_2', padding='same')(conv_2_1)
+    
+    conc_2_2 = concatenate([conv_2_1, conv_2_2], axis=3, name='conc_2_2')
+    conv_2_3 = Conv2D(128, (2,2), activation='relu', name='conv_2_3', padding='same')(conc_2_2)
+    
+    conv_2_4 = Conv2D(128, (2,2), activation='relu', name='conv_2_4', padding='same')(conv_2_3)
+    
+    conc_2_3 = concatenate([conv_2_3, conv_2_4], axis=3, name='conc_2_3')
+    conv_2_5 = Conv2D(128, (2,2), activation='relu', name='conv_2_5', padding='same')(conc_2_3)
+    bnorm_2_1 = Dropout(DROP)(BatchNormalization(name='bnorm_2_1')(conv_2_5))
+    pool_2_1 = MaxPooling2D((2,2), strides=2, name='pool_2_1')(bnorm_2_1)
+    
+    # общая сверточная часть
+    conc_3_1 = concatenate([pool_1_1, pool_2_1], axis=3, name='conc_3_1')
+    
+    conv_3_1 = Conv2D(256, (2,2), activation='relu', name='conv_3_1', padding='same')(conc_3_1)
+    conv_3_2 = Conv2D(256, (2,2), activation='relu', name='conv_3_2', padding='same')(conv_3_1)
+    
+    conc_3_2 = concatenate([conv_3_1, conv_3_2], axis=3, name='conc_3_2')
+    conv_3_3 = Conv2D(256, (2,2), activation='relu', name='conv_3_3', padding='same')(conc_3_2)
+    
+    conv_3_4 = Conv2D(256, (2,2), activation='relu', name='conv_3_4', padding='same')(conv_3_3)
+    
+    conc_3_3 = concatenate([conv_3_3, conv_3_4], axis=3, name='conc_3_3')
+    conv_3_5 = Conv2D(256, (2,2), activation='relu', name='conv_3_5', padding='same')(conc_3_3)
+    bnorm_3_1 = Dropout(DROP)(BatchNormalization(name='bnorm_3_1')(conv_3_5))
+    pool_3_1 = MaxPooling2D((2,2), strides=2, name='pool_3_1')(bnorm_3_1)
+    flat_3_1 = Flatten(name='flat_3_1')(pool_3_1)
+
+    # выходная подсеть по наличию дефекта //////////////////////////////////////////////////
+    d_4_1 = Dense(2048, activation='linear', name='d_4_1')(flat_3_1)
+    d_4_2 = Dense(256, activation='linear', name='d_4_2')(d_4_1)
+    d_4_3 = Dense(128, activation='linear', name='d_4_3')(d_4_2)
+    d_4_4 = Dense(64, activation='linear', name='d_4_4')(d_4_3)
+    d_4_5 = Dense(32, activation='linear', name='d_4_5')(d_4_4)
+    d_4_6 = Dense(4, activation='linear', name='d_4_6')(d_4_5)
+    
+    output_def_bool = Dense(1, activation='sigmoid', name='output_def_bool')(d_4_6)
+    
+    return keras.Model([input_time, input_amp], [output_def_bool], name='model')
+
+def get_model_v12(batch_size):
+    # создание архитектуры модели
+    DROP = 0.3
+    HIDDEN_DIM = 64
+    # 1 подсеть //////////////////////////////////////////////////
+    input_time = Input((4,4,32), name = 'input_time')
+    
+    conv_1_1 = Conv2D(128, (2,2), activation='relu', name='conv_1_1', padding='same')(input_time)
+    conv_1_2 = Conv2D(128, (2,2), activation='relu', name='conv_1_2', padding='same')(conv_1_1)
+    
+    conc_1_2 = concatenate([conv_1_1, conv_1_2], axis=3, name='conc_1_2')
+    conv_1_3 = Conv2D(128, (2,2), activation='relu', name='conv_1_3', padding='same')(conc_1_2)
+    
+    conv_1_4 = Conv2D(128, (2,2), activation='relu', name='conv_1_4', padding='same')(conv_1_3)
+    
+    conc_1_3 = concatenate([conv_1_3, conv_1_4], axis=3, name='conc_1_3')
+    conv_1_5 = Conv2D(128, (2,2), activation='relu', name='conv_1_5', padding='same')(conc_1_3)
+    bnorm_1_1 = Dropout(DROP)(BatchNormalization(name='bnorm_1_1')(conv_1_5))
+    pool_1_1 = MaxPooling2D((2,2), strides=2, name='pool_1_1')(bnorm_1_1)
+    
+    # 2 подсеть //////////////////////////////////////////////////
+    input_amp = Input((4,4,32), name = 'input_amp')
+    
+    conv_2_1 = Conv2D(128, (2,2), activation='relu', name='conv_2_1', padding='same')(input_amp)
+    conv_2_2 = Conv2D(128, (2,2), activation='relu', name='conv_2_2', padding='same')(conv_2_1)
+    
+    conc_2_2 = concatenate([conv_2_1, conv_2_2], axis=3, name='conc_2_2')
+    conv_2_3 = Conv2D(128, (2,2), activation='relu', name='conv_2_3', padding='same')(conc_2_2)
+    
+    conv_2_4 = Conv2D(128, (2,2), activation='relu', name='conv_2_4', padding='same')(conv_2_3)
+    
+    conc_2_3 = concatenate([conv_2_3, conv_2_4], axis=3, name='conc_2_3')
+    conv_2_5 = Conv2D(128, (2,2), activation='relu', name='conv_2_5', padding='same')(conc_2_3)
+    bnorm_2_1 = Dropout(DROP)(BatchNormalization(name='bnorm_2_1')(conv_2_5))
+    pool_2_1 = MaxPooling2D((2,2), strides=2, name='pool_2_1')(bnorm_2_1)
+    
+    # общая сверточная часть
+    conc_3_1 = concatenate([pool_1_1, pool_2_1], axis=3, name='conc_3_1')
+    
+    conv_3_1 = Conv2D(256, (2,2), activation='relu', name='conv_3_1', padding='same')(conc_3_1)
+    conv_3_2 = Conv2D(256, (2,2), activation='relu', name='conv_3_2', padding='same')(conv_3_1)
+    
+    conc_3_2 = concatenate([conv_3_1, conv_3_2], axis=3, name='conc_3_2')
+    conv_3_3 = Conv2D(256, (2,2), activation='relu', name='conv_3_3', padding='same')(conc_3_2)
+    
+    conv_3_4 = Conv2D(256, (2,2), activation='relu', name='conv_3_4', padding='same')(conv_3_3)
+    
+    conc_3_3 = concatenate([conv_3_3, conv_3_4], axis=3, name='conc_3_3')
+    conv_3_5 = Conv2D(256, (2,2), activation='relu', name='conv_3_5', padding='same')(conc_3_3)
+    bnorm_3_1 = Dropout(DROP)(BatchNormalization(name='bnorm_3_1')(conv_3_5))
+    pool_3_1 = MaxPooling2D((2,2), strides=2, name='pool_3_1')(bnorm_3_1)
+    flat_3_1 = Flatten(name='flat_3_1')(pool_3_1)
+
+    # vae
+    z_mean = Dense(HIDDEN_DIM)(flat_3_1)
+    z_log_var = Dense(HIDDEN_DIM)(flat_3_1)
+
+    def noiser(args):
+        global z_mean, z_log_var
+        z_mean, z_log_var = args
+        N = keras.backend.random_normal(shape=(batch_size, HIDDEN_DIM),mean=0,stddev=1.0)
+        return keras.backend.exp(z_log_var/2) * N + z_mean
+
+    h = Lambda(noiser, output_shape=(HIDDEN_DIM,))([z_mean, z_log_var])
+    
+    # выходная подсеть по наличию дефекта //////////////////////////////////////////////////
+    imput_dec = Dense(64, activation='linear', name='d_4_1')(flat_3_1)
+    d_4_2 = Dense(32, activation='linear', name='d_4_2')(imput_dec)
+    d_4_3 = Dense(16, activation='linear', name='d_4_3')(d_4_2)
+    d_4_4 = Dense(4, activation='linear', name='d_4_4')(d_4_3)
+    
+    output_def_bool = Dense(1, activation='sigmoid', name='output_def_bool')(d_4_4)
+
+    encoder = keras.Model([input_time, input_amp], h, name='encoder')
+    decoder = keras.Model(imput_dec, output_def_bool, name='decoder')
+    vae = keras.Model([input_time, input_amp],decoder(encoder([input_time, input_amp])))
+    
+    return vae
