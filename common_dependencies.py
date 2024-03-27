@@ -11,6 +11,7 @@ import itertools
 from IPython.display import display
 import matplotlib.pyplot as plt
 from matplotlib import ticker
+from matplotlib.patches import Rectangle
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.layers import (Reshape, Input, Dense, Flatten, Conv2D, Dropout, 
