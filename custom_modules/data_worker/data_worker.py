@@ -260,18 +260,18 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
     """Converte all data cells values from given pandas dataframe from
     string (describes 2D values array) to 1D float numpy array of 64 items"""
     num_pars = re.findall(r'(-?\d+(\.\d+)*)*\s*:\s*(-?\d+(\.\d+)*)*', df_cell_value)
+
+    if len([item[0] for item in num_pars if item[0] and item[2]]) == 0:
+        logger.debug(f"""Got cell value without any full time-value pars""")
+        return np.zeros((64))
+    
     for item in num_pars:
         if not item[0] or not item[2]:
-            logger.debug(f"""
-            Got input df cell str with uncompleted time-amplitude value pars.
-            The uncomplited pars replaced with zeros pars.
+            logger.debug(f"""Got input df cell str with uncompleted 
+            time-amplitude value pars. Uncompleted pars deleted.
             Input str: {df_cell_value}""")
-            break
-    num_pars = np.array([[item[0], item[2]] if item[0] and item[2] 
-                             else [0, 0] for item in num_pars]).astype(float)
-    
-    if num_pars.size == 0:
-        return np.zeros((64))
+            
+    num_pars = np.array([[item[0], item[2]] for item in num_pars if item[0] and item[2]]).astype(float)
 
     if num_pars.shape[0] > 32:
         raise ValueError(f'Too much time-amplitude values pars in a cell. Got: {num_pars.shape[0]}. Max: 32')
@@ -279,8 +279,8 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
     time_vals = num_pars[:,0]
     amp_vals = num_pars[:,1]
     
-    time_vals = np.pad(time_vals, (0, abs(time_vals.size-32)), constant_values=(0))
-    amp_vals = np.pad(amp_vals, (0, abs(amp_vals.size-32)), constant_values=(0))
+    time_vals = np.pad(time_vals, (abs(time_vals.size-32), 0), constant_values=(0))
+    amp_vals = np.pad(amp_vals, (abs(amp_vals.size-32), 0), constant_values=(0))
     return np.concatenate((time_vals, amp_vals), axis=0)
 
 @validate_call
