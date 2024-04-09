@@ -197,7 +197,10 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
     max_val = arr.max()
     min_val = arr.min()
 
-    arr = (arr - min_val) / (max_val - min_val)
+    if min_val < 0:
+        arr -= min_val
+    
+    arr = arr / arr.max()
 
     logger.debug(f"""
     The arr max before normalization: {max_val}
@@ -262,7 +265,7 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
     num_pars = re.findall(r'(-?\d+(\.\d+)*)*\s*:\s*(-?\d+(\.\d+)*)*', df_cell_value)
 
     if len([item[0] for item in num_pars if item[0] and item[2]]) == 0:
-        logger.debug(f"""Got cell value without any full time-value pars""")
+        #logger.debug(f"""Got cell value without any full time-value pars""")
         return np.zeros((64))
     
     for item in num_pars:
