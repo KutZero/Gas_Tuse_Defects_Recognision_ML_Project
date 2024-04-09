@@ -806,77 +806,65 @@ def get_model_v12(batch_size):
     # создание архитектуры модели
     DROP = 0.3
     HIDDEN_DIM = 64
+
+    # encoder
     # 1 подсеть //////////////////////////////////////////////////
-    input_time = Input((4,4,32), name = 'input_time')
-    
-    conv_1_1 = Conv2D(128, (2,2), activation='relu', name='conv_1_1', padding='same')(input_time)
-    conv_1_2 = Conv2D(128, (2,2), activation='relu', name='conv_1_2', padding='same')(conv_1_1)
-    
-    conc_1_2 = concatenate([conv_1_1, conv_1_2], axis=3, name='conc_1_2')
-    conv_1_3 = Conv2D(128, (2,2), activation='relu', name='conv_1_3', padding='same')(conc_1_2)
-    
-    conv_1_4 = Conv2D(128, (2,2), activation='relu', name='conv_1_4', padding='same')(conv_1_3)
-    
-    conc_1_3 = concatenate([conv_1_3, conv_1_4], axis=3, name='conc_1_3')
-    conv_1_5 = Conv2D(128, (2,2), activation='relu', name='conv_1_5', padding='same')(conc_1_3)
-    bnorm_1_1 = Dropout(DROP)(BatchNormalization(name='bnorm_1_1')(conv_1_5))
-    pool_1_1 = MaxPooling2D((2,2), strides=2, name='pool_1_1')(bnorm_1_1)
+    enc_input_time = Input((4,4,32), name = 'enc_input_time')
+    enc_conv_1_1 = Conv2D(32, (2,2), activation='relu', name='enc_conv_1_1', padding='same')(enc_input_time)
+    enc_conv_1_2 = Conv2D(32, (2,2), activation='relu', name='enc_conv_1_2', padding='same')(enc_conv_1_1)
+    enc_conv_1_3 = Conv2D(32, (2,2), activation='relu', name='enc_conv_1_3', padding='same')(enc_conv_1_2)
+    enc_pool_1_1 = MaxPooling2D((2,2), strides=2, name='enc_pool_1_1')(enc_conv_1_3)
     
     # 2 подсеть //////////////////////////////////////////////////
-    input_amp = Input((4,4,32), name = 'input_amp')
+    enc_input_amp = Input((4,4,32), name = 'enc_input_amp')
+    enc_conv_2_1 = Conv2D(32, (2,2), activation='relu', name='enc_conv_2_1', padding='same')(enc_input_amp)
+    enc_conv_2_2 = Conv2D(32, (2,2), activation='relu', name='enc_conv_2_2', padding='same')(enc_conv_2_1)
+    enc_conv_2_3 = Conv2D(32, (2,2), activation='relu', name='enc_conv_2_3', padding='same')(enc_conv_2_2)
+    enc_pool_2_1 = MaxPooling2D((2,2), strides=2, name='enc_pool_2_1')(enc_conv_2_3)
     
-    conv_2_1 = Conv2D(128, (2,2), activation='relu', name='conv_2_1', padding='same')(input_amp)
-    conv_2_2 = Conv2D(128, (2,2), activation='relu', name='conv_2_2', padding='same')(conv_2_1)
-    
-    conc_2_2 = concatenate([conv_2_1, conv_2_2], axis=3, name='conc_2_2')
-    conv_2_3 = Conv2D(128, (2,2), activation='relu', name='conv_2_3', padding='same')(conc_2_2)
-    
-    conv_2_4 = Conv2D(128, (2,2), activation='relu', name='conv_2_4', padding='same')(conv_2_3)
-    
-    conc_2_3 = concatenate([conv_2_3, conv_2_4], axis=3, name='conc_2_3')
-    conv_2_5 = Conv2D(128, (2,2), activation='relu', name='conv_2_5', padding='same')(conc_2_3)
-    bnorm_2_1 = Dropout(DROP)(BatchNormalization(name='bnorm_2_1')(conv_2_5))
-    pool_2_1 = MaxPooling2D((2,2), strides=2, name='pool_2_1')(bnorm_2_1)
-    
-    # общая сверточная часть
-    conc_3_1 = concatenate([pool_1_1, pool_2_1], axis=3, name='conc_3_1')
-    
-    conv_3_1 = Conv2D(256, (2,2), activation='relu', name='conv_3_1', padding='same')(conc_3_1)
-    conv_3_2 = Conv2D(256, (2,2), activation='relu', name='conv_3_2', padding='same')(conv_3_1)
-    
-    conc_3_2 = concatenate([conv_3_1, conv_3_2], axis=3, name='conc_3_2')
-    conv_3_3 = Conv2D(256, (2,2), activation='relu', name='conv_3_3', padding='same')(conc_3_2)
-    
-    conv_3_4 = Conv2D(256, (2,2), activation='relu', name='conv_3_4', padding='same')(conv_3_3)
-    
-    conc_3_3 = concatenate([conv_3_3, conv_3_4], axis=3, name='conc_3_3')
-    conv_3_5 = Conv2D(256, (2,2), activation='relu', name='conv_3_5', padding='same')(conc_3_3)
-    bnorm_3_1 = Dropout(DROP)(BatchNormalization(name='bnorm_3_1')(conv_3_5))
-    pool_3_1 = MaxPooling2D((2,2), strides=2, name='pool_3_1')(bnorm_3_1)
-    flat_3_1 = Flatten(name='flat_3_1')(pool_3_1)
+    # общая сверточная часть /////////////////////////////////////
+    enc_conc_3_1 = concatenate([enc_pool_1_1, enc_pool_2_1], axis=3, name='enc_conc_3_1')
+    enc_conv_3_1 = Conv2D(64, (2,2), activation='relu', name='enc_conv_3_1', padding='same')(enc_conc_3_1)
+    enc_conv_3_2 = Conv2D(64, (2,2), activation='relu', name='enc_conv_3_2', padding='same')(enc_conv_3_1)
+    enc_conv_3_3 = Conv2D(64, (2,2), activation='relu', name='enc_conv_3_3', padding='same')(enc_conv_3_2)
+    enc_pool_3_1 = MaxPooling2D((2,2), strides=2, name='enc_pool_3_1')(enc_conv_3_3)
+    enc_flat_3_1 = Flatten(name='enc_flat_3_1')(enc_pool_3_1)
 
     # vae
-    z_mean = Dense(HIDDEN_DIM)(flat_3_1)
-    z_log_var = Dense(HIDDEN_DIM)(flat_3_1)
+    z_mean = Dense(HIDDEN_DIM)(enc_flat_3_1)
+    z_log_var = Dense(HIDDEN_DIM)(enc_flat_3_1)
 
     def noiser(args):
         global z_mean, z_log_var
         z_mean, z_log_var = args
-        N = keras.backend.random_normal(shape=(batch_size, HIDDEN_DIM),mean=0,stddev=1.0)
+        N = keras.backend.random_normal(shape=(batch_size, HIDDEN_DIM), mean=0, stddev=1.0)
         return keras.backend.exp(z_log_var/2) * N + z_mean
 
     h = Lambda(noiser, output_shape=(HIDDEN_DIM,))([z_mean, z_log_var])
-    
-    # выходная подсеть по наличию дефекта //////////////////////////////////////////////////
-    imput_dec = Dense(64, activation='linear', name='d_4_1')(flat_3_1)
-    d_4_2 = Dense(32, activation='linear', name='d_4_2')(imput_dec)
-    d_4_3 = Dense(16, activation='linear', name='d_4_3')(d_4_2)
-    d_4_4 = Dense(4, activation='linear', name='d_4_4')(d_4_3)
-    
-    output_def_bool = Dense(1, activation='sigmoid', name='output_def_bool')(d_4_4)
 
-    encoder = keras.Model([input_time, input_amp], h, name='encoder')
-    decoder = keras.Model(imput_dec, output_def_bool, name='decoder')
-    vae = keras.Model([input_time, input_amp],decoder(encoder([input_time, input_amp])))
+    # decoder
+    # общая сверточная часть /////////////////////////////////////
+    dec_input = Input((64,), name = 'dec_input')
+    dec_resh_1_1 = Reshape((1,1,64))(dec_input)
+    dec_ups_1_1 = UpSampling2D(2, interpolation='bilinear', name='dec_ups_1_1') (dec_resh_1_1)
+    dec_conv_1_1 = Conv2D(64, (2,2), activation='relu', name='dec_conv_1_1', padding='same')(dec_ups_1_1)
+    dec_conv_1_2 = Conv2D(64, (2,2), activation='relu', name='dec_conv_1_2', padding='same')(dec_conv_1_1)
+    dec_conv_1_3 = Conv2D(64, (2,2), activation='relu', name='dec_conv_1_3', padding='same')(dec_conv_1_2)
+
+    # 1 подсеть //////////////////////////////////////////////////
+    dec_ups_2_1 = UpSampling2D(2, interpolation='bilinear', name='dec_ups_2_1') (dec_conv_1_3)
+    dec_conv_2_1 = Conv2D(64, (2,2), activation='relu', name='dec_conv_2_1', padding='same')(dec_ups_2_1)
+    dec_conv_2_2 = Conv2D(64, (2,2), activation='relu', name='dec_conv_2_2', padding='same')(dec_conv_2_1)
+    dec_output_time = Conv2D(64, (2,2), activation='relu', name='dec_output_time', padding='same')(dec_conv_2_2)
+
+    # 2 подсеть //////////////////////////////////////////////////
+    dec_ups_3_1 = UpSampling2D(2, interpolation='bilinear', name='dec_ups_3_1') (dec_conv_1_3)
+    dec_conv_3_1 = Conv2D(64, (2,2), activation='relu', name='dec_conv_3_1', padding='same')(dec_ups_3_1)
+    dec_conv_3_2 = Conv2D(64, (2,2), activation='relu', name='dec_conv_3_2', padding='same')(dec_conv_3_1)
+    dec_output_amp = Conv2D(64, (2,2), activation='relu', name='dec_output_amp', padding='same')(dec_conv_3_2)
+    
+    encoder = keras.Model([enc_input_time, enc_input_amp], h, name='encoder')
+    decoder = keras.Model(dec_input, [dec_output_time, dec_output_amp], name='decoder')
+    vae = keras.Model([enc_input_time, enc_input_amp], decoder(encoder([enc_input_time, enc_input_amp])), name='vae')
     
     return vae
