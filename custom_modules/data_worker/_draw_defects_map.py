@@ -146,9 +146,9 @@ def _build_defects_map(df: pd.DataFrame,
         xlocs, xlabel_paddings, xlabels = _calc_labels_and_locs(cols, x_ticks_step)
         ylocs, ylabel_paddings, ylabels = _calc_labels_and_locs(indexes, y_ticks_step)
         
-        map = ax.pcolormesh(df)
+        mapp = ax.pcolormesh(df)
 
-        cbar = fig.colorbar(map)
+        cbar = fig.colorbar(mapp)
         cbar.ax.tick_params(labelsize=20)
         
         ax.set_xticks(xlocs, xlabels)
