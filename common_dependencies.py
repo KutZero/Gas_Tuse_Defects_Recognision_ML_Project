@@ -4,18 +4,19 @@ import sys
 import pandas as pd
 import numpy as np
 import logging
-import tensorflow as tf
-from tensorflow import keras
 import itertools
 
 from IPython.display import display
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.patches import Rectangle
-from tensorflow.keras import backend as K
-from tensorflow.keras.utils import plot_model
+
+import keras_cv
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 from tensorflow.keras.layers import (Reshape, Input, Dense, Flatten, Conv2D, Dropout, 
-    Conv2DTranspose, Lambda, MaxPooling2D, UpSampling2D, concatenate, BatchNormalization)
+    Conv2DTranspose, Lambda, MaxPooling2D, UpSampling2D, concatenate, BatchNormalization, Normalization)
 
 #import custom_modules.pipe_data as pidf
 import custom_modules.data_worker as dw
