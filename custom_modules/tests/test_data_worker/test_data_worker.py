@@ -82,7 +82,21 @@ class Test_normalize_data:
     pass
 
 class Test_standardize_data:
-    pass
+    def test_zeros_input_array(self):
+        input_value = np.zeros((2,2), dtype='float32')
+        assert (standardize_data(input_value) == input_value).all()
+
+    @pytest.mark.parametrize(
+    'input_value, res',
+    [
+        # positive values array
+        (np.array([1.,2.,3.,4.]), np.array([0.25, 0.5, 0.75, 1])),
+        # positive and negative values array
+        (np.array([1.,-2.,3.,-4.]), np.array([0.25, -0.5, 0.75, -1])),
+    ])
+    def test_correct_input(self, input_value, res):
+        assert (standardize_data(input_value) == res).all()
+        
 
 class Test__get_df_from_defects_file:
     pass

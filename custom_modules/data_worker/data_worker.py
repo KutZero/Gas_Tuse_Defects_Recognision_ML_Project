@@ -213,8 +213,8 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def standardize_data(arr: np.ndarray) -> np.ndarray:
     """
-    Standartize the arr so it max value less or equal than 1
-    and min value greater or equal than -1.
+    Standartize the arr by dividing it element-wise by
+    max in absolute value of the array.
 
     Parameters
     ----------
@@ -227,10 +227,14 @@ def standardize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with standartized some float values
     
     """
+    if np.all(arr==0):
+        logger.debug('\nThe input array consists only from zeros so it was not changed')
+        return arr
+    
     max_val = arr.max()
     min_val = arr.min()
-    
-    arr = np.divide(arr, max_val, out=np.zeros_like(arr), where=max_val!=0)
+
+    arr = arr / np.max(np.abs(arr))
 
     logger.debug(f"""
     The arr max before standardization: {max_val}
