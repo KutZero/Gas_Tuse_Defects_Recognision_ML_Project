@@ -194,13 +194,17 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with normalized some float values
     
     """
+    if np.all(arr==0):
+        logger.debug('\nThe input array consists only from zeros so it was not changed')
+        return arr
+            
     max_val = arr.max()
     min_val = arr.min()
-
+    
     if min_val < 0:
         arr -= min_val
     
-    arr = arr / arr.max()
+    arr = arr / np.max(np.abs(arr))
 
     logger.debug(f"""
     The arr max before normalization: {max_val}
