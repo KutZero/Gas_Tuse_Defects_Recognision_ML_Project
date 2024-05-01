@@ -8,15 +8,14 @@
 2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
 3) В общем виде: "help([Имя модуля].[Имя функции])".
 """
-import logging
-import pandas as pd
-import numpy as np
 import re
 import os
+import logging
+import itertools
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import Union
-import itertools
-
 from typing_extensions import Annotated
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
