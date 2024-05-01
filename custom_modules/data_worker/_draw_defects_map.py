@@ -37,8 +37,7 @@ def draw_defects_map(*args, **kwargs):
     _build_defects_map(*args, **kwargs)
     if 'path_to_save' in kwargs.keys():
         plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
-    else:
-         plt.show()
+    plt.show()
     plt.close()
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
