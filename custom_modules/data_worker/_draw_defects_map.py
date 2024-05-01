@@ -126,7 +126,7 @@ def _build_defects_map(df: pd.DataFrame,
     with plt.style.context(plt_style_context):
         fig, ax = plt.subplots()
     
-        fig.set_figwidth(18)
+        fig.set_figwidth(32)
         fig.set_figheight(8)
         fig.patch.set_alpha(0.0)
     
