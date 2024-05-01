@@ -35,6 +35,7 @@ def get_crop_generator(arr: np.ndarray, crop_size: int, crop_step: int):
         for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
             yield arr[i:i+crop_size, j:j+crop_size]
 
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def get_augmented_crop_generator(arr: np.ndarray, crop_size: int, crop_step: int) -> np.ndarray:
     """
     Augnment data of the arr which store crops data.
