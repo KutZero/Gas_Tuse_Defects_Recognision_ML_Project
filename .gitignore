@@ -8,3 +8,5 @@ __pycache__/
 data/report/
 *.png
 *.keras
+*.jpeg
+*.jpg
