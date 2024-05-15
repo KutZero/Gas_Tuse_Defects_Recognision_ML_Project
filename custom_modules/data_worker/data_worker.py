@@ -204,7 +204,7 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
     if min_val < 0:
         arr -= min_val
     
-    arr = arr / np.max(np.abs(arr))
+    arr = arr / np.max(arr)
 
     logger.debug(f"""
     The arr max before normalization: {max_val}
