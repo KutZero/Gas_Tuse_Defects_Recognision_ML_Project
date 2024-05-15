@@ -9,6 +9,11 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.layers import (
+    Input, Conv2D, MaxPooling2D, Dropout,
+    concatenate, Flatten, Dense, UpSampling2D,
+    BatchNormalization
+)
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker
@@ -71,15 +76,15 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
 
     x_arr = dw.df_to_numpy(x_df)
     y_arr = y_df.to_numpy()
-
+    
     x_arr = np.concatenate([dw.normalize_data(x_arr[:,:,:32]), dw.normalize_data(x_arr[:,:,32:])],axis=2)
     y_arr = dw.normalize_data(y_arr)
     
     x_arr = x_arr[top:top+height, left:left+width]
     y_arr = y_arr[top:top+height, left:left+width]
     
-    x_df = dw.extend_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
-    y_df = dw.extend_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
+    x_arr = dw.extend_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
+    y_arr = dw.extend_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
     
     #x_time_crops_gen = dw.get_crop_generator(x_arr_time, crop_size, crop_step)
     #x_amp_crops_gen = dw.get_crop_generator(x_arr_amp, crop_size, crop_step)
