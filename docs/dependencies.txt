@@ -1,0 +1,14 @@
+tensorflow
+matplotlib 
+pydot 
+graphviz 
+IPython 
+python-docx 
+pytest 
+shapely 
+pydantic
+pandas 
+jupyterlab
+jupyterlab-execute-time
+jupyterlab-night
+onenpyxl
