@@ -26,7 +26,33 @@ PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float
 logger = logging.getLogger('main.'+__name__)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-+@validate_call(config=dict(arbitrary_types_allowed=True))
+def get_batch_generator(generator, batch_size: PositiveInt):
+    """Transform np.ndarray or simple data type generator into ndarray batch generator"""
+    #if batch_size < 1:
+    #    raise ValueError('Batch size should be bigger than 1')
+    # check is generator itarable
+    try:
+        iterator = iter(generator)
+    except TypeError:
+        raise TypeError('The generator param should be iterable')
+    
+    batch = list()
+    i = 0
+    try:
+        while True:
+            if i < batch_size:
+                batch.append(next(generator))
+                i+=1
+            else:
+                res = np.stack(batch) if type(batch[0]) == np.ndarray else np.array(batch)
+                i=0
+                batch = list()
+                yield res
+    except:
+        if batch:
+            yield np.stack(batch) if type(batch[0]) == np.ndarray else np.array(batch)
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
     """
     Creates generator for sliding window across arr with given step and crop size

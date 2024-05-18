@@ -1,4 +1,5 @@
 from custom_modules.data_worker.data_worker import (
+    get_batch_generator,
     get_crop_generator,
     get_augmented_crop_generator,
     calc_model_prediction_accuracy,
@@ -22,6 +23,54 @@ import itertools
 from contextlib import nullcontext as does_not_raise
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
+class Test_get_batch_generator:
+    @pytest.mark.parametrize(
+        'input_sequance, batch_size, output_sequance',
+        [
+            # input sequance bigger than batch size and can't be integer divided
+            ([0,1,2,3,4,5], 4, [np.array([0,1,2,3]), np.array([4,5])]),
+            # input sequance less than batch size and can't be integer divided
+            ([0,1,2], 4, [np.array([0,1,2])]),
+            # input sequance bigger than batch size and can be integer divided
+            ([0,1,2,3], 2, [np.array([0,1]), np.array([2,3])]),
+        ]
+    )
+    def test_correct_input_where_items_are_simple_data_type(self, input_sequance, batch_size, output_sequance):
+        input_gen = (i for i in input_sequance)
+        res_sequance = [batch for batch in get_batch_generator(input_gen, batch_size)]
+        for res_seq, inp_seq in zip(res_sequance, output_sequance): 
+            assert (res_seq == inp_seq).all()
+
+
+    
+    @pytest.mark.parametrize(
+        'input_sequance, batch_size, output_sequance',
+        [
+            # input sequance bigger than batch size and can't be integer divided
+            ([np.array([0,1]), np.array([2,3]), np.array([4,5])], 2, [np.array([[0,1], [2,3]]), np.array([4,5])]),
+            # input sequance less than batch size and can't be integer divided
+            ([np.array([0,1]), np.array([2,3]), np.array([4,5])], 4, [np.array([[0,1], [2,3], [4,5]])]),
+            # input sequance bigger than batch size and can be integer divided
+            ([np.array([0,1]), np.array([2,3]), np.array([4,5]), np.array([6,7])], 2, [np.array([[0,1], [2,3]]), np.array([[4,5], [6,7]])]),
+        ]
+    )
+    def test_correct_input_where_items_are_numpy_ndarrays(self, input_sequance, batch_size, output_sequance):
+        input_gen = (i for i in input_sequance)
+        res_sequance = [batch for batch in get_batch_generator(input_gen, batch_size)]
+        for res_seq, inp_seq in zip(res_sequance, output_sequance): 
+            assert (res_seq == inp_seq).all()
+
+    @pytest.mark.parametrize(
+        'input_sequance, batch_size',
+        [
+            (1, 1),
+        ]
+    )
+    def test_wrong_type_input(self, input_sequance, batch_size):
+        with pytest.raises(TypeError):
+            assert get_batch_generator((i for i in input_sequance), batch_size)
+    
+            
 class Test_get_x_and_y_data:
     pass
 

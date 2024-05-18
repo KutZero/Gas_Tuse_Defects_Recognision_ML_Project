@@ -1,6 +1,7 @@
 import logging
 
 from .data_worker import (
+    get_batch_generator,
     get_crop_generator,
     get_augmented_crop_generator,
     calc_model_prediction_accuracy,
