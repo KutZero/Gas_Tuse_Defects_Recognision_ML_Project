@@ -91,7 +91,7 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     x_crops_gen = dw.get_crop_generator(x_arr, crop_size, crop_step)
     y_crops_gen = dw.get_crop_generator(y_arr, crop_size, crop_step)
     
-    y_binary_gen = (1 if np.sum(crop > 0) else 0 for crop in dw.get_crop_generator(y_arr, crop_size, crop_step))
+    y_binary_gen = (np.array([1]) if np.sum(crop > 0) else np.array([0]) for crop in dw.get_crop_generator(y_arr, crop_size, crop_step))
     #y_depth_gen = (np.max(crop) for crop in dw.get_crop_generator(y_arr, crop_size, crop_step))
 
     logger.debug("end")
