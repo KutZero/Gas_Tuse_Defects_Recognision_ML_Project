@@ -68,8 +68,8 @@ def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFra
 
     if 'path_to_save' in kwargs.keys():
         plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
-    else:
-         plt.show()
+    #else:
+    plt.show()
     plt.close()
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
@@ -85,8 +85,8 @@ def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[
 
     if 'path_to_save' in kwargs.keys():
         plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
-    else:
-         plt.show()
+    #else:
+    plt.show()
     plt.close()
     
 @validate_call(config=dict(arbitrary_types_allowed=True))
