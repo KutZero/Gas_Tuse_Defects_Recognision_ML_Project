@@ -87,8 +87,8 @@ def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt) -> np
     """
     message = f"""
     The input ndarray shape: {arr.shape}"""
-    arr = np.pad(arr, ((crop_size-1, crop_size-1),(0, 0),(0, 0)), 'reflect')
-    arr = np.pad(arr, ((0, 0),(crop_size-1, crop_size-1),(0, 0)), 'wrap')
+    arr = np.pad(arr, ((crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
+    arr = np.pad(arr, ((0, 0),(crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-2)]), 'wrap')
     
     logger.debug(f"""{message}
     The crop size: {crop_size}
