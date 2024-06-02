@@ -73,22 +73,28 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     x_df, y_df = dw.get_x_and_y_data(*desc_part.data_path_tuple)
     x_df = dw.roll_df(x_df, desc_part.data_x_shift, 1)
     y_df = dw.roll_df(y_df, desc_part.data_x_shift, 1)
-
+    
     x_arr = dw.df_to_numpy(x_df)
     y_arr = y_df.to_numpy()
+
+    # normalize_data
+    # standardize_data
     
     x_arr = np.concatenate([dw.normalize_data(x_arr[:,:,:32]), dw.normalize_data(x_arr[:,:,32:])],axis=2)
     y_arr = dw.normalize_data(y_arr)
-    
+
     x_arr = x_arr[top:top+height, left:left+width]
     y_arr = y_arr[top:top+height, left:left+width]
+
+    x_arr = dw.extend_ndarray_for_prediction(x_arr, crop_size)
+    y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_size)
     
     x_arr = dw.extend_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
     y_arr = dw.extend_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
     
-    #x_time_crops_gen = dw.get_crop_generator(x_arr_time, crop_size, crop_step)
-    #x_amp_crops_gen = dw.get_crop_generator(x_arr_amp, crop_size, crop_step)
     x_crops_gen = dw.get_crop_generator(x_arr, crop_size, crop_step)
+    #x_time_crops_gen = dw.get_crop_generator(x_arr[:,:,:32], crop_size, crop_step)
+    #x_amp_crops_gen = dw.get_crop_generator(x_arr[:,:,32:], crop_size, crop_step)
     y_crops_gen = dw.get_crop_generator(y_arr, crop_size, crop_step)
     
     y_binary_gen = (np.array([1]) if np.sum(crop > 0) else np.array([0]) for crop in dw.get_crop_generator(y_arr, crop_size, crop_step))
