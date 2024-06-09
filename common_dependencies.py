@@ -5,6 +5,12 @@ import logging
 import itertools
 import numpy as np
 import pandas as pd
+import pathlib
+
+os.environ["ROCM_PATH"] = "/opt/rocm"
+os.environ["MLIR_CRASH_REPRODUCER_DIRECTORY"] = "enable"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+#os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
 import tensorflow as tf
 from tensorflow import keras
@@ -23,12 +29,8 @@ from IPython.display import display
 from typing import NamedTuple
 
 import custom_modules.data_worker as dw
-
-os.environ["ROCM_PATH"] = "/opt/rocm"
-os.environ["MLIR_CRASH_REPRODUCER_DIRECTORY"] = "enable"
-#os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
-
 # create logger
+
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
 # create console handler and set level to debug
