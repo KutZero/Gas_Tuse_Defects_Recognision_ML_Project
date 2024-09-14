@@ -10,5 +10,7 @@ pydantic
 pandas 
 jupyterlab
 jupyterlab-execute-time
-jupyterlab-night
 onenpyxl
+scikit-learn
+seaborn
+scipy
