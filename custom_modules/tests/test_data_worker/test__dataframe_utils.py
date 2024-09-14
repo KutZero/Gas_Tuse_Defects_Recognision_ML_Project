@@ -1,12 +1,11 @@
-from custom_modules.data_worker._dataframe_utils import roll_df, \
-    extend_df_for_crops_dividing, extend_df_for_prediction
+from custom_modules.data_worker._dataframe_utils import (
+    roll_df, extend_df_for_crops_dividing, extend_df_for_prediction)
 
 import pytest
 import pandas as pd
 import numpy as np
 import re
 import os
-import matplotlib.pyplot as plt
 
 from contextlib import nullcontext as does_not_raise
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator
@@ -139,9 +138,9 @@ class Test_extend_df_for_crops_dividing:
 class Test_extend_df_for_prediction:
     
     @pytest.mark.parametrize(
-    'crop_size, res',
+    'crop_size, only_horizontal, res',
     [
-        (2, pd.DataFrame(data=[[6,4,5,6,4],
+        (2, False, pd.DataFrame(data=[[6,4,5,6,4],
                                [3,1,2,3,1],
                                [6,4,5,6,4],
                                [9,7,8,9,7],
@@ -150,7 +149,7 @@ class Test_extend_df_for_prediction:
                       columns=['col3','col1','col2','col3','col1'],
                       index=[1,0,1,2,3,2])),
 
-        (3, pd.DataFrame(data=[[8,9,7,8,9,7,8],
+        (3, False, pd.DataFrame(data=[[8,9,7,8,9,7,8],
                                [5,6,4,5,6,4,5],
                                [2,3,1,2,3,1,2],
                                [5,6,4,5,6,4,5],
@@ -159,11 +158,18 @@ class Test_extend_df_for_prediction:
                                [8,9,7,8,9,7,8],
                                [5,6,4,5,6,4,5]], 
                       columns=['col2','col3','col1','col2','col3','col1','col2'],
-                      index=[2,1,0,1,2,3,2,1]))
+                      index=[2,1,0,1,2,3,2,1])),
+        
+        (2, True, pd.DataFrame(data=[[3,1,2,3,1],
+                               [6,4,5,6,4],
+                               [9,7,8,9,7],
+                               [12,10,11,12,10]], 
+                      columns=['col3','col1','col2','col3','col1'],
+                      index=[0,1,2,3])),
     ]
     )
-    def test_correct_input_extend_principle(self, test_input_df, crop_size, res):
-        assert extend_df_for_prediction(test_input_df, crop_size=crop_size).equals(res) == True
+    def test_correct_input_extend_principle(self, test_input_df, crop_size, only_horizontal, res):
+        assert extend_df_for_prediction(test_input_df, crop_size=crop_size, only_horizontal=only_horizontal).equals(res) == True
         
     @pytest.mark.parametrize(
     'crop_size, expectation',

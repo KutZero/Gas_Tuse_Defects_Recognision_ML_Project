@@ -112,7 +112,7 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_
     return df
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt) -> pd.DataFrame:
+def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_horizontal: bool=False) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
     training quantity. 
@@ -134,6 +134,8 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt) -> pd.Dat
         The size of crop sliding window (has equal sides).
     crop_step : int
         The step for df cropping by sliding window).
+    only_horizontal: bool
+        If true extends the df only horizontally
 
     Returns
     -------
@@ -151,10 +153,11 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt) -> pd.Dat
     df_indexes = df.index.to_numpy()
     df_columns = df.columns.to_numpy()
 
-    df_values = np.pad(df_values, ((crop_size-1, crop_size-1),(0, 0)), 'reflect')
+    if not only_horizontal:
+        df_values = np.pad(df_values, ((crop_size-1, crop_size-1),(0, 0)), 'reflect')
+        df_indexes = np.pad(df_indexes, crop_size-1, 'reflect')
+        
     df_values = np.pad(df_values, ((0, 0),(crop_size-1, crop_size-1)), 'wrap')
-    
-    df_indexes = np.pad(df_indexes, crop_size-1, 'reflect')
     df_columns = np.pad(df_columns, crop_size-1, 'wrap')
     
     df = pd.DataFrame(data=df_values, index=df_indexes, columns=df_columns)
