@@ -56,7 +56,7 @@ def extend_ndarray_for_crops_dividing(arr: np.ndarray, crop_size: PositiveInt, c
     return arr
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt) -> np.ndarray:
+def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt, only_horizontal: bool=False) -> np.ndarray:
     """
     Extend np.ndarray for increasing network model prediction or
     training quantity. 
@@ -78,7 +78,9 @@ def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt) -> np
         The size of crop sliding window (has equal sides).
     crop_step : int
         The step for df cropping by sliding window).
-
+    only_horizontal: bool
+        If true extends the df only horizontally
+        
     Returns
     -------
     out : np.ndarray
@@ -87,7 +89,8 @@ def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt) -> np
     """
     message = f"""
     The input ndarray shape: {arr.shape}"""
-    arr = np.pad(arr, ((crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
+    if not only_horizontal:
+        arr = np.pad(arr, ((crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
     arr = np.pad(arr, ((0, 0),(crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-2)]), 'wrap')
     
     logger.debug(f"""{message}
