@@ -62,7 +62,7 @@ def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: Posit
             yield arr[i:i+crop_size, j:j+crop_size]
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt) -> np.ndarray:
+def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
     """
     Augnment data of the arr which store crops data.
     Used augmentations: rotation for 90 degree (4 times);
@@ -72,12 +72,16 @@ def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_s
     ----------
     arr : numpy.ndarray
         The numpy array with crops data
+    crop_size: PositiveInt
+        The size of the square crop side
+    crop_step: PositiveInt
+        The size of the sliding window
+        step making crops
     
-    Returns
+    Yields
     -------
     out : numpy.ndarray
         The augmented numpy array with crops data
-    
     """
     message = f'''
     The input array cells: {arr.shape} 
