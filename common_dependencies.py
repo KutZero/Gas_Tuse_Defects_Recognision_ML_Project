@@ -7,12 +7,13 @@ import numpy as np
 import pandas as pd
 import pathlib
 
-os.environ["ROCM_PATH"] = "/opt/rocm"
-os.environ["MLIR_CRASH_REPRODUCER_DIRECTORY"] = "enable"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+#os.environ["ROCM_PATH"] = "/opt/rocm"
+#os.environ["MLIR_CRASH_REPRODUCER_DIRECTORY"] = "enable"
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 #os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
 import tensorflow as tf
+import tensorflow.keras.backend as K
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.layers import (
@@ -75,22 +76,32 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     x_df, y_df = dw.get_x_and_y_data(*desc_part.data_path_tuple)
     x_df = dw.roll_df(x_df, desc_part.data_x_shift, 1)
     y_df = dw.roll_df(y_df, desc_part.data_x_shift, 1)
-    
+
     x_arr = dw.df_to_numpy(x_df)
     y_arr = y_df.to_numpy()
+    
+    # encode x_arr
+    '''model_ver = 13
+    model_num = 1
+    PATH_TO_MODEL = next(pathlib.Path(f'networks/AE/').rglob(f'id=v{model_ver:04}n{model_num:04}*.keras'))
+    model = keras.models.load_model(PATH_TO_MODEL)
+    model = keras.Model(inputs=model.input, outputs=min([layer.output for layer in model.layers], key=lambda x: x.shape[1]))
 
+    pred = model.predict(np.reshape(x_arr,(-1,64)), verbose=0)
+    x_arr = np.reshape(pred, (*x_arr.shape[:2],-1))'''
+    
     # normalize_data
     # standardize_data
-    
     x_arr = np.concatenate([dw.normalize_data(x_arr[:,:,:32]), dw.normalize_data(x_arr[:,:,32:])],axis=2)
+    #x_arr = dw.normalize_data(x_arr)
     y_arr = dw.normalize_data(y_arr)
-
+    
     x_arr = x_arr[top:top+height, left:left+width]
     y_arr = y_arr[top:top+height, left:left+width]
 
-    x_arr = dw.extend_ndarray_for_prediction(x_arr, crop_size)
-    y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_size)
-    
+    x_arr = dw.extend_ndarray_for_prediction(x_arr, crop_size, only_horizontal=True)
+    y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_siz, only_horizontal=Truee)
+
     x_arr = dw.extend_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
     y_arr = dw.extend_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
     
