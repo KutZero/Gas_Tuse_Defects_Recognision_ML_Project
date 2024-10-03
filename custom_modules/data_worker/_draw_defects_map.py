@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import re
 import matplotlib.pyplot as plt
+from matplotlib.colors import Colormap
 
 from matplotlib import ticker
 from matplotlib.patches import Polygon as mplPolygon
@@ -20,30 +21,56 @@ from typing_extensions import Annotated
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
 PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
+PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, **kwargs):
+def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, *, path_to_save=None, dpi=200, **kwargs):
+    """
+    Draw a zeros quantity in read x data.
+    """
     data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
-    draw_defects_map(data_df, **kwargs)
+    draw_defects_map(data_df, path_to_save, dpi, **kwargs)
 
-def draw_defects_map(*args, **kwargs):
+def draw_defects_map(*args, path_to_save=None, dpi=200, **kwargs):
     """
     Draw a defects map from the readed data.
+
+    Parameters
+    ----------
+    path_to_save: str or path-like or binary file-like
+        The fname param for matplotlib.pyplot.savefig().
+    dpi: int
+        The dpi param for matplotlib.pyplot.savefig().
     """
     _build_defects_map(*args, **kwargs)
-    if 'path_to_save' in kwargs.keys():
-        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
+    if path_to_save is not None:
+        plt.savefig(path_to_save, bbox_inches='tight', dpi=dpi)
     plt.show()
     plt.close()
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFrame, pol_alfa: PercentFloat = 1.0, **kwargs):
+def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFrame, *, pol_alfa: PercentFloat=1.0, path_to_save=None, dpi=200, **kwargs):
     """
     Draw a defects map from the readed data with reference map owerlapption.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        The dataframe of size detectors num * rows
+        with defect depth values in cells.
+    ref_df: pd.DataFrame
+        The dataframe of size detectors num * rows
+        with defect depth values in cells got by the experts.
+    pol_alfa: PercentFloat
+        
+    path_to_save: str or path-like or binary file-like
+        The fname param for matplotlib.pyplot.savefig().
+    dpi: int
+        The dpi param for matplotlib.pyplot.savefig().
     """
     fig, ax = _build_defects_map(df, **kwargs)
     
@@ -64,18 +91,30 @@ def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFra
     
     # Add the matplotlib Polygon patches
     for polygon in polygons:
-        ax.add_patch(mplPolygon(polygon.exterior.coords, fc='crimson', alpha=pol_alfa))
+        ax.add_patch(mplPolygon(polygon.exterior.coords, fc=(0,1,0,1), alpha=pol_alfa)) #
 
-    if 'path_to_save' in kwargs.keys():
-        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
-    #else:
+    if path_to_save is not None:
+        plt.savefig(path_to_save, bbox_inches='tight', dpi=dpi)
     plt.show()
     plt.close()
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[Rectangle], **kwargs):
+def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[Rectangle], *, path_to_save=None, dpi=200, **kwargs):
     """
     Draw a defects map from the readed data with reference map owerlapption.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        The dataframe of size detectors num * rows
+        with defect depth values in cells.
+    rectangles: list[Rectangle]
+        The list of matplotlib.patches.Rectangle to be
+        placed in the plot.
+    path_to_save: str or path-like or binary file-like
+        The fname param for matplotlib.pyplot.savefig().
+    dpi: int
+        The dpi param for matplotlib.pyplot.savefig().
     """
     fig, ax = _build_defects_map(df, **kwargs)
     
@@ -83,9 +122,8 @@ def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[
     for rectangle in rectangles:
         ax.add_patch(rectangle)
 
-    if 'path_to_save' in kwargs.keys():
-        plt.savefig(kwargs['path_to_save'], bbox_inches='tight')
-    #else:
+    if path_to_save is not None:
+        plt.savefig(path_to_save, bbox_inches='tight', dpi=dpi)
     plt.show()
     plt.close()
     
