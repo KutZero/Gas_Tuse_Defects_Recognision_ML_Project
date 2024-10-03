@@ -55,7 +55,22 @@ def get_batch_generator(generator, batch_size: PositiveInt):
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
     """
-    Creates generator for sliding window across arr with given step and crop size
+    Create generator for sliding window across arr with given step and crop size
+
+    Parameters
+    ----------
+    arr : numpy.ndarray
+        The numpy array with crops data
+    crop_size: PositiveInt
+        The size of the square crop side
+    crop_step: PositiveInt
+        The size of the sliding window
+        step making crops
+
+    Yields
+    -------
+    out : numpy.ndarray
+        The augmented numpy array with crops data
     """
     for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
         for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
