@@ -133,11 +133,14 @@ def _build_defects_map(df: pd.DataFrame,
                         title: str = 'Развернутая карта дефектов',
                         xlabel: str = 'Номер датчика', 
                         ylabel: str = 'Номер измерения',
+                        *,
                         x_ticks_step: PositiveInt = 50,
                         y_ticks_step: PositiveInt = 20,
-                        plt_style_context: str = 'default',
-                        *,
-                        path_to_save: str = None):
+                        plt_style_context = 'default',
+                        pcolormesh_cmap = 'inferno',
+                        add_color_bar: bool = False,
+                        polygonize_data: int = 0,
+                        bins: PositiveInt = 101):
     """
     Draw a defects map from the readed data.
     
@@ -156,10 +159,30 @@ def _build_defects_map(df: pd.DataFrame,
         The x ticks step (approximate).
     y_ticks_step : int, optional
         The y ticks step (approximate).
-    plt_style_context: str, optional
-        The param for matplotlib.pyplot.style.context()
+    plt_style_context: optional
+        The style param  for matplotlib.pyplot.style.context().
+    pcolormesh_cmap: optional
+        The cmap param for matplotlib.pyplot.pcolormesh.
+    add_color_bar : bool, optional
+        If true add color bar to the plot.
+    polygonize_data : int, optional
+        May be 0, 1, 2 or 4. 0 - do nothing. 1 - polygonize map.
+        2 - polygonize map and add edges. 3 - polygonize map, add edges
+        and label every polygon.
+    bins: PositiveInt
+        Used if approx_df is True. Defines possible
+        range of values in the df. If 5 there are
+        0. , 0.25, 0.5 , 0.75, 1. possible values. Polygon is a connected
+        zone of values. Values connected to the polygon calculates on base
+        of the step between values in bin. The step = 1 / (bins - 1). So if
+        the bins=5, the step=0.25. If in that case the polygon named 0.25 it
+        means than values within the one are bigger or equal than 0.25-step/2 
+        and less than 0.25+step/2, or in other words if the polygon 
+        named a 0.25 when the bins=5 the values within polygon >= 0.125 and < 0.375.
     """
-    
+    if not polygonize_data in [0,1,2,3]:
+        raise ValueError('The polygonize_data must be on of [0,1,2,3]')
+        
     with plt.style.context(plt_style_context):
         fig, ax = plt.subplots()
     
@@ -182,11 +205,18 @@ def _build_defects_map(df: pd.DataFrame,
         
         xlocs, xlabel_paddings, xlabels = _calc_labels_and_locs(cols, x_ticks_step)
         ylocs, ylabel_paddings, ylabels = _calc_labels_and_locs(indexes, y_ticks_step)
-        
-        mapp = ax.pcolormesh(df)
 
-        cbar = fig.colorbar(mapp)
-        cbar.ax.tick_params(labelsize=20)
+        if polygonize_data:
+            df = _approx_df(df, bins)
+        
+        mapp = ax.pcolormesh(df, cmap=pcolormesh_cmap)
+
+        if polygonize_data > 1:
+           fig, ax = _polygonize(df, fig, ax, polygonize_data)
+        
+        if add_color_bar:
+            cbar = fig.colorbar(mapp)
+            cbar.ax.tick_params(labelsize=20)
         
         ax.set_xticks(xlocs, xlabels)
         ax.set_yticks(ylocs, ylabels)
@@ -207,7 +237,63 @@ def _build_defects_map(df: pd.DataFrame,
 
         ax.set_xticklabels(xtext_labels) 
         ax.set_yticklabels(ytext_labels) 
+        ax.set_aspect('equal')
+                
     return fig, ax
+
+def _approx_df(df, bins):
+    """
+    Approximate the df by given bins.
+    If true approximated the df's cell values
+    for range of max size equal to the bins param.
+    The values approximates by the inner step value equals to 1 / (bins - 1). 
+    Every valuSo if the bins=5, the step=0.25. If in that case the polygon named 0.25 it
+    means than values within the one are bigger or equal than 0.25-step/2 
+    and less than 0.25+step/2
+    """
+    step = 1/(bins-1)
+    for value in np.arange(0,1+step/2,step):
+        df = df.map(lambda x: value if (x >= value-step/2) and (x < value+step/2) else x)
+    return df
+
+def _polygonize(df, fig, ax, polygonize_data):
+    """
+    Draw polygons over map by every unique value
+    """
+    for value in np.unique(df.to_numpy()):
+        # Get pixel position above the threshold
+        arr = df.to_numpy()
+        Y, X = np.where(arr==value) # (arr >= value-step/2) & (arr < value+step/2)
+        positions = np.dstack((X, Y))[0]
+        
+        # Create a rectangle per position and merge them.
+        rectangles = [shPolygon([xy, xy + [1, 0], xy + [1, 1], xy + [0, 1]]) for xy in positions]
+        polygons = unary_union(rectangles)
+        
+        # Shapely will return either a Polygon or a MultiPolygon. 
+        # Make sure the structure is the same in any case.
+        if polygons.geom_type == "Polygon":
+            polygons = [polygons]
+        else:
+            polygons = polygons.geoms
+
+        # Add the matplotlib Polygon patches
+        if polygonize_data == 2:
+            for polygon in polygons:
+                ax.add_patch(mplPolygon(polygon.exterior.coords, fc=(0,0,0,0), ec='white'))
+        elif polygonize_data == 3:
+            for polygon in polygons:
+                min_side = min([polygon.bounds[3] - polygon.bounds[1], 
+                                polygon.bounds[2] - polygon.bounds[0]])
+                text_coords = polygon.point_on_surface()
+                ax.annotate(text=f'{value:.4f}', 
+                            xy=[text_coords.x, text_coords.y], 
+                            color=('white' if value <= 0.6 else 'black'), 
+                            fontsize=(min_side if min_side <= 40 else 40), 
+                            ha='center', va='center')
+                ax.add_patch(mplPolygon(polygon.exterior.coords, fc=(0,0,0,0), ec='white'))
+    return fig, ax
+    
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
