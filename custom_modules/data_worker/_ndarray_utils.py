@@ -18,10 +18,13 @@ PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
 logger = logging.getLogger('main.'+__name__)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def extend_ndarray_for_crops_dividing(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt) -> np.ndarray:
+def match_ndarray_for_crops_dividing(arr: np.ndarray, 
+                                     crop_size: PositiveInt, 
+                                     crop_step: PositiveInt,
+                                     mode: str = 'extend') -> np.ndarray:
     """
-    Extend the np.ndarray for exact crops dividing by a determined crop window with
-    a determined cropping step.
+    Match the np.ndarray for exact crops dividing by a determined crop window with
+    a determined cropping step via extending or cropping it.
 
     Parameters
     ----------
@@ -31,22 +34,36 @@ def extend_ndarray_for_crops_dividing(arr: np.ndarray, crop_size: PositiveInt, c
         The size of crop sliding window (has equal sides).
     crop_step : int
         The step for df cropping by sliding window).
+    mode: str
+        The mode to use when preparing the numpy array for
+        crop dividing. Can be "extend" or "crop".
 
     Returns
     -------
     out : np.ndarray
-        Output extended np.ndarray.
+        Output match np.ndarray.
         
     """ 
     message = f"""
     The input ndarray shape: {arr.shape}"""
+
+    if not mode in ('crop','extend'):
+        raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode}')
+    
     new_rows = crop_step - ((arr.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((arr.shape[1] - crop_size) % crop_step)
 
     if new_rows != crop_step:
-        arr = np.pad(arr, ((0, new_rows),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
+        if mode == 'extend':
+            arr = np.pad(arr, ((0, new_rows),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
+        elif mode == 'crop':
+            arr = arr[:-1*(crop_step-new_rows)]
     if new_cols != crop_step:
-        arr = np.pad(arr, ((0, 0),(0, new_cols),*[(0,0) for i in range(arr.ndim-2)]), 'reflect')
+        if mode == 'extend':
+            arr = np.pad(arr, ((0, 0),(0, new_cols),*[(0,0) for i in range(arr.ndim-2)]), 'reflect')
+        elif mode == 'crop':
+            arr = arr[:,:-1*(crop_step-new_cols)]
+            
 
     logger.debug(f"""{message}
     The crop size: {crop_size}

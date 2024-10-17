@@ -102,8 +102,8 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     x_arr = dw.extend_ndarray_for_prediction(x_arr, crop_size, only_horizontal=True)
     y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_siz, only_horizontal=Truee)
 
-    x_arr = dw.extend_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
-    y_arr = dw.extend_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
+    x_arr = dw.match_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
+    y_arr = dw.match_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
     
     x_crops_gen = dw.get_crop_generator(x_arr, crop_size, crop_step)
     #x_time_crops_gen = dw.get_crop_generator(x_arr[:,:,:32], crop_size, crop_step)
