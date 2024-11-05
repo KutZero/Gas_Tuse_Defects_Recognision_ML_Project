@@ -100,7 +100,7 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     y_arr = y_arr[top:top+height, left:left+width]
 
     x_arr = dw.extend_ndarray_for_prediction(x_arr, crop_size, only_horizontal=True)
-    y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_siz, only_horizontal=Truee)
+    y_arr = dw.extend_ndarray_for_prediction(y_arr, crop_size, only_horizontal=True)
 
     x_arr = dw.match_ndarray_for_crops_dividing(x_arr, crop_size, crop_step)
     y_arr = dw.match_ndarray_for_crops_dividing(y_arr, crop_size, crop_step)
