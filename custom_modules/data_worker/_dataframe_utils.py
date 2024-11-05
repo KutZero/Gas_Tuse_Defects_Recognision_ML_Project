@@ -70,10 +70,13 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
                         columns=df_columns)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_step: PositiveInt) -> pd.DataFrame:
+def match_df_for_crops_dividing(df: pd.DataFrame, 
+                                crop_size: PositiveInt, 
+                                crop_step: PositiveInt,
+                                mode: str = 'extend') -> pd.DataFrame:
     """
-    Extend the df for exact crops dividing by a determined crop window with
-    a determined cropping step.
+    Match the df for exact crops dividing by a determined crop window with
+    a determined cropping step via extending or cropping it.
 
     Parameters
     ----------
@@ -83,11 +86,14 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_
         The size of crop sliding window (has equal sides).
     crop_step : int
         The step for df cropping by sliding window).
+    mode: str
+        The mode to use when preparing the numpy array for
+        crop dividing. Can be "extend" or "crop".
 
     Returns
     -------
     out : pandas.DataFrame
-        Output extended dataframe.
+        Output match dataframe.
         
     """
     message = f"""
@@ -95,14 +101,23 @@ def extend_df_for_crops_dividing(df: pd.DataFrame, crop_size: PositiveInt, crop_
     if min([crop_size, crop_step]) > min(df.shape):
         raise ValueError("""Crop size and crop step should be bigger or equal
         than the given df less axis""")
+
+    if not mode in ('crop','extend'):
+        raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode}')
         
     new_rows = crop_step - ((df.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((df.shape[1] - crop_size) % crop_step)
 
     if new_rows != crop_step:
-        df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
+        if mode == 'extend':
+            df = pd.concat([df, df.iloc[-2:-new_rows-2:-1]], axis=0)
+        elif mode == 'crop':
+            df = df.iloc[:-1*(crop_step-new_rows)]
     if new_cols != crop_step:
-        df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
+        if mode == 'extend':
+            df = pd.concat([df, df.iloc[:,-2:-new_cols-2:-1]], axis=1)
+        elif mode == 'crop':
+            df = df.iloc[:,:-1*(crop_step-new_cols)]
 
     logger.debug(f"""{message}
     The crop size: {crop_size}

@@ -1,5 +1,5 @@
 from custom_modules.data_worker._dataframe_utils import (
-    roll_df, extend_df_for_crops_dividing, extend_df_for_prediction)
+    roll_df, match_df_for_crops_dividing, extend_df_for_prediction)
 
 import pytest
 import pandas as pd
@@ -23,117 +23,142 @@ def test_input_df():
                       index=[0,1,2,3])
     return df
 
-class Test_extend_df_for_crops_dividing:
+class Test_match_df_for_crops_dividing:
     @pytest.mark.parametrize(
-    'crop_size, crop_step, res',
+    'crop_size, crop_step, mode, res',
     [
         # nothing
-        (3, 1, pd.DataFrame(data=[[1,2,3],
-                            [4,5,6],
-                            [7,8,9],
-                            [10,11,12]], 
+        (3, 1, 'extend', pd.DataFrame(data=[[1,2,3],
+                                            [4,5,6],
+                                            [7,8,9],
+                                            [10,11,12]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])),
         # nothing
-        ('3', 1, pd.DataFrame(data=[[1,2,3],
-                            [4,5,6],
-                            [7,8,9],
-                            [10,11,12]], 
+        ('3', 1, 'extend', pd.DataFrame(data=[[1,2,3],
+                                              [4,5,6],
+                                              [7,8,9],
+                                              [10,11,12]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])),
         # nothing
-        (3, '1', pd.DataFrame(data=[[1,2,3],
-                            [4,5,6],
-                            [7,8,9],
-                            [10,11,12]], 
+        (3, '1', 'extend', pd.DataFrame(data=[[1,2,3],
+                                              [4,5,6],
+                                              [7,8,9],
+                                              [10,11,12]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])),
         # nothing
-        ('3', '1', pd.DataFrame(data=[[1,2,3],
-                            [4,5,6],
-                            [7,8,9],
-                            [10,11,12]], 
+        ('3', '1', 'extend', pd.DataFrame(data=[[1,2,3],
+                                                [4,5,6],
+                                                [7,8,9],
+                                                [10,11,12]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])),
         # add rows only
-        (3, 2, pd.DataFrame(data=[[1,2,3],
-                            [4,5,6],
-                            [7,8,9],
-                            [10,11,12],
-                            [7,8,9]], 
+        (3, 2, 'extend', pd.DataFrame(data=[[1,2,3],
+                                            [4,5,6],
+                                            [7,8,9],
+                                            [10,11,12],
+                                            [7,8,9]], 
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3,2])),
-
         # add cols only
-        (2, 2, pd.DataFrame(data=[[1,2,3,2],
-                            [4,5,6,5],
-                            [7,8,9,8],
-                            [10,11,12,11]], 
+        (2, 2, 'extend', pd.DataFrame(data=[[1,2,3,2],
+                                            [4,5,6,5],
+                                            [7,8,9,8],
+                                            [10,11,12,11]], 
                       columns=['col1','col2','col3','col2'],
                       index=[0,1,2,3])),
-
         # add rows and cols
-        (2, 3, pd.DataFrame(data=[[1,2,3,2,1],
-                            [4,5,6,5,4],
-                            [7,8,9,8,7],
-                            [10,11,12,11,10],
-                            [7,8,9,8,7]], 
+        (2, 3, 'extend', pd.DataFrame(data=[[1,2,3,2,1],
+                                            [4,5,6,5,4],
+                                            [7,8,9,8,7],
+                                            [10,11,12,11,10],
+                                            [7,8,9,8,7]], 
                       columns=['col1','col2','col3','col2','col1'],
                       index=[0,1,2,3,2])),
+         # remove rows only
+        (3, 2, 'crop', pd.DataFrame(data=[[1,2,3],
+                                          [4,5,6],
+                                          [7,8,9]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2])),
+        # remove cols only
+        (2, 2, 'crop', pd.DataFrame(data=[[1,2],
+                                          [4,5],
+                                          [7,8],
+                                          [10,11]], 
+                      columns=['col1','col2'],
+                      index=[0,1,2,3])),
+        # removev rows and cols
+        (2, 3, 'crop', pd.DataFrame(data=[[1,2],
+                                          [4,5]], 
+                      columns=['col1','col2'],
+                      index=[0,1])),
     ]
     )
-    def test_correct_input_extend_principle(self, test_input_df, crop_size, crop_step, res):
-        assert extend_df_for_crops_dividing(test_input_df, crop_size=crop_size, crop_step=crop_step).equals(res) == True
+    def test_correct_input_extend_principle(self, test_input_df, crop_size, crop_step, mode, res):
+        assert match_df_for_crops_dividing(test_input_df, crop_size=crop_size, crop_step=crop_step, mode=mode).equals(res) == True
 
     @pytest.mark.parametrize(
-    'crop_size, crop_step, expectation',
+    'crop_size, crop_step, mode, expectation',
     [
         # crop_size bigger than rows quantity 
-        (5, 1, pytest.raises(ValueError)),
+        (5, 1, 'extend', pytest.raises(ValueError)),
         # crop_size bigger than cols quantity
-        (4, 1, pytest.raises(ValueError)),
+        (4, 1, 'extend', pytest.raises(ValueError)),
         # crop_step bigger than rows quantity
-        (2, 5, pytest.raises(ValueError)),
+        (2, 5, 'extend', pytest.raises(ValueError)),
         # crop_step bigger than cols quantity
-        (2, 4, pytest.raises(ValueError)),
+        (2, 4, 'extend', pytest.raises(ValueError)),
         # negative crop_size
-        (-2, 5, pytest.raises(ValueError)),
+        (-2, 5, 'extend', pytest.raises(ValueError)),
         # negative crop_step
-        (2, -2, pytest.raises(ValueError)),
+        (2, -2, 'extend', pytest.raises(ValueError)),
         # zero crop_size
-        (0, 2, pytest.raises(ValueError)),
+        (0, 2, 'extend', pytest.raises(ValueError)),
         # zero crop_step
-        (2, 0, pytest.raises(ValueError))
+        (2, 0, 'extend', pytest.raises(ValueError)),
+        # mode is uncorrect word
+        (2, 0, 'sdfasdf', pytest.raises(ValueError))
     ]
     )
-    def test_uncorrect_crop_size_and_crop_step(self, test_input_df, crop_size, crop_step, expectation):
+    def test_uncorrect_crop_size_and_crop_step(self, test_input_df, crop_size, crop_step, mode, expectation):
         with expectation:
-            assert extend_df_for_crops_dividing(test_input_df, crop_size=crop_size, crop_step=crop_step)
+            assert match_df_for_crops_dividing(test_input_df, crop_size=crop_size, crop_step=crop_step, mode=mode)
             
     @pytest.mark.parametrize(
-    'input_df, crop_size, crop_step, expectation',
+    'input_df, crop_size, crop_step, mode, expectation',
     [
         # df is not pandas.DataFrame
-        ('sdfsdf', 5, 1, pytest.raises(ValidationError)),
+        ('sdfsdf', 5, 1, 'extend', pytest.raises(ValidationError)),
         # crop_size is not int
         (pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,2,3]), '2grg', 1, pytest.raises(ValidationError)),
+                      index=[0,1,2,3]), '2grg', 1, 'extend', pytest.raises(ValidationError)),
         # crop_step in not int
         (pd.DataFrame(data=[[1,2,3],
                             [4,5,6],
                             [7,8,9],
                             [10,11,12]], 
                       columns=['col1','col2','col3'],
-                      index=[0,1,2,3]), 2, 'reger', pytest.raises(ValidationError))
+                      index=[0,1,2,3]), 2, 'reger', 'extend', pytest.raises(ValidationError)),
+        # mode in not str
+        (pd.DataFrame(data=[[1,2,3],
+                            [4,5,6],
+                            [7,8,9],
+                            [10,11,12]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3]), 2, 2, 5, pytest.raises(ValidationError))
     ]
     )
-    def test_uncorrect_input_values_type(self, input_df, crop_size, crop_step, expectation):
+    def test_uncorrect_input_values_type(self, input_df, crop_size, crop_step, mode, expectation):
         with expectation:
-            assert extend_df_for_crops_dividing(input_df, crop_size=crop_size, crop_step=crop_step)
+            assert match_df_for_crops_dividing(input_df, crop_size=crop_size, crop_step=crop_step, mode=mode)
 
 class Test_extend_df_for_prediction:
     

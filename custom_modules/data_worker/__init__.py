@@ -11,7 +11,7 @@ from .data_worker import (
     standardize_data)
 from ._draw_defects_map import (draw_defects_map, draw_defects_map_with_reference_owerlap, 
     draw_zeros_quantity_in_data_df, draw_defects_map_with_rectangles_owerlap)
-from ._dataframe_utils import roll_df, extend_df_for_crops_dividing, extend_df_for_prediction 
+from ._dataframe_utils import roll_df, match_df_for_crops_dividing, extend_df_for_prediction 
 from ._ndarray_utils import match_ndarray_for_crops_dividing, extend_ndarray_for_prediction 
 
 # create logger
