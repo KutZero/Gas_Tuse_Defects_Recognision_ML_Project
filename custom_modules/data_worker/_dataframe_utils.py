@@ -182,3 +182,34 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_hori
     The output df shape: {df.shape}""")
     
     return df
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
+    """
+    Reshape df with numpy.array in each cell of 64 items
+    to numpy array of shape (df.shape[0], df.shape[1], 64)
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The pandas dataframe with data got from detectors
+
+    Returns
+    -------
+    out : numpy.ndarray
+        The array of size (df.shape[0], df.shape[1], 64) with float values
+        
+    """
+    df.map(_check_df_cell_is_correct_numpy_array)
+    x = df.to_numpy()
+    return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
+        for j in range(x.shape[1])],axis=1)
+
+def _check_df_cell_is_correct_numpy_array(cell_value):
+    """Check that every pandas dataframe cell is a flat numpy array of floats"""
+    if not isinstance(cell_value, np.ndarray):
+        raise TypeError(f'Every cell of the dataframe should store numpy array, but got: {type(cell_value)}')
+    if cell_value.ndim > 1:
+        raise ValueError(f'Every numpy array in the dataframe should be flat, but got shape: {cell_value.shape}')
+    if not isinstance(cell_value[0].item(), float):
+        raise TypeError(f'Every numpy array in the dataframe should store float values, but got: {cell_value.dtype}')

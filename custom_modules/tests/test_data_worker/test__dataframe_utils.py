@@ -1,5 +1,9 @@
 from custom_modules.data_worker._dataframe_utils import (
-    roll_df, match_df_for_crops_dividing, extend_df_for_prediction)
+    roll_df, 
+    df_to_numpy,
+    match_df_for_crops_dividing, 
+    extend_df_for_prediction,
+    _check_df_cell_is_correct_numpy_array)
 
 import pytest
 import pandas as pd
@@ -22,6 +26,46 @@ def test_input_df():
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])
     return df
+
+class Test__check_df_cell_is_correct_numpy_array:
+    pass
+
+class Test_df_to_numpy:
+    def test_correct_input(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]})
+        res = np.array([[[1.,2.],[5.,6.]],
+                        [[3.,4.],[7.,8.]]])
+        assert (df_to_numpy(input_df) == res).all()
+
+    @pytest.mark.parametrize(
+        'input_df, expectation',
+        [
+            (pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': ['test_string', np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [np.array([1.,2.]), 32], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [[1,2,3,4], np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), np.array([7.,8.])]}), pytest.raises(TypeError)),
+            (pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                           'col2': [np.array([5.,6.]), None]}), pytest.raises(TypeError)),
+        ]
+    )
+    def test_uncorrect_input_cell_value_is_not_numpy_array(self, input_df, expectation):
+        with expectation:
+            assert df_to_numpy(input_df)
+
+    def test_uncorrect_input_cell_value_is_not_flat_numpy_array(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                              'col2': [np.array([[5.,6.]]), np.array([7.,8.])]})
+        with pytest.raises(ValueError):
+            df_to_numpy(input_df)
+    
+    def test_uncorrect_input_cell_value_is_numpy_array_with_not_float_values(self):
+        input_df = pd.DataFrame({'col1': [np.array([1.,2.]), np.array([3.,4.])], 
+                                 'col2': [np.array([5,6]), np.array([7.,8.])]})
+        with pytest.raises(TypeError):
+            df_to_numpy(input_df)
 
 class Test_match_df_for_crops_dividing:
     @pytest.mark.parametrize(
