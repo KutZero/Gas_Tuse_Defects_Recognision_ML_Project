@@ -1,4 +1,12 @@
-from common_dependencies import *
+import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.layers import (
+    Input, Conv2D, MaxPooling2D, Dropout,
+    concatenate, Flatten, Dense, UpSampling2D,
+    BatchNormalization
+)
 
 def get_model_v2():
     # создание архитектуры модели
