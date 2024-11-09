@@ -21,11 +21,8 @@ from custom_modules.data_worker._ndarray_utils import (
     match_ndarray_for_crops_dividing, 
     extend_ndarray_for_prediction)
 
-from custom_modules.data_worker.dataset import (
-    get_batch_generator,
-    get_crop_generator,
-    get_augmented_crop_generator,
-    get_x_and_y_data
+from custom_modules.data_worker.data_part import (
+    DataPart
 )
 
 # create logger

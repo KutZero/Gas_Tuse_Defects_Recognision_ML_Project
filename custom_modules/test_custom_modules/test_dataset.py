@@ -1,8 +1,8 @@
-from custom_modules.data_worker.dataset import (
+from custom_modules.dataset import (
     get_batch_generator,
     get_crop_generator,
     get_augmented_crop_generator,
-    get_x_and_y_data,
+    get_x_and_y_data_dfs,
     _get_df_from_defects_file,
     _split_cell_string_value_to_numpy_array_of_64_values,
     _get_df_from_data_file)
@@ -82,7 +82,7 @@ class Test_get_batch_generator:
             assert get_batch_generator((i for i in input_sequance), batch_size)
     
             
-class Test_get_x_and_y_data:
+class Test_get_x_and_y_data_dfs:
     pass
 
 class Test_get_crop_generator:
