@@ -15,11 +15,13 @@ import numpy as np
 import os
 import re
 from pydantic import validate_call, PositiveInt
+from typing import Callable, Optional, Generator
 
 import custom_modules.data_worker as dw
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
+
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def get_batch_generator(generator, batch_size: PositiveInt):
@@ -73,6 +75,7 @@ def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: Posit
         for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
             yield arr[i:i+crop_size, j:j+crop_size]
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
     """
@@ -111,6 +114,7 @@ def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_s
     logger.debug(message)
     return itertools.chain(*[get_crop_generator(arr, crop_size, crop_step) for arr in arrs])
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def get_x_and_y_data_dfs(data_part: dw.DataPart) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -133,9 +137,20 @@ def get_x_and_y_data_dfs(data_part: dw.DataPart) -> tuple[pd.DataFrame, pd.DataF
     """
     logger.debug(f"""
     The input data_part: {data_part}""")
-    
-    data_df = _get_df_from_data_file(data_part.data_path)
-    defects_df = _get_df_from_defects_file(data_part.defects_path)
+
+    data_df, defects_df = _read_data_df_and_defects_df(data_part.data_path, data_part.defects_path)
+
+    data_df, defects_df = _unify_dfs(data_df, defects_df, data_part.unify_func, data_part.unify_separatly)
+
+    data_df, defects_df = _crop_data_df_and_defects_df(data_df, defects_df, data_part.xy, data_part.width, data_part.height)
+
+    return data_df, defects_df
+
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _read_data_df_and_defects_df(data_path: os.PathLike, defects_path: os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame]:
+    data_df = _get_df_from_data_file(data_path)
+    defects_df = _get_df_from_defects_file(defects_path)
     
     # create defects depths mask
     # create base zeros dataframe with size like data_df
@@ -160,42 +175,55 @@ def get_x_and_y_data_dfs(data_part: dw.DataPart) -> tuple[pd.DataFrame, pd.DataF
     logger.debug(f"""
     Read detectors data shape: {data_df.shape}
     Read defect data shape: {defects_df.shape}""")
-    
-    if data_part.unify_func is not None:
-        data_df_values = dw.df_to_numpy(data_df)
-        defects_df_values = defects_df.to_numpy()
-        if data_part.unify_separatly:
-            logger.debug(f"""
-    Unifying data separatly with {data_part.unify_func.__name__} func...""")
-            x_arr = np.concatenate([data_part.unify_func(data_df_values[:,:,:32]), data_part.unify_func(data_df_values[:,:,32:])],axis=2)
-        else:
-            logger.debug(f"""
-    Unifying data together with {data_part.unify_func.__name__} func...""")
-            x_arr = data_part.unify_func(data_df_values)
-        y_arr = data_part.unify_func(defects_df_values)
-        
-        data_df = pd.DataFrame(data=0, index=data_df.index, columns=data_df.columns, dtype='object')
-        for i in range(data_df.shape[0]):
-            for j in range(data_df.shape[1]):
-               data_df.iloc[i,j] = data_df_values[i,j]
-        defects_df = pd.DataFrame(data=defects_df_values, index=defects_df.index, columns=defects_df.columns)
-
-    if data_part.xy == (0,0) and data_part.height is None and data_part.width is None:
-        return data_df, defects_df
-
-    end_row = None if data_part.height is None else data_part.xy[1]+data_part.height
-    end_col = None if data_part.width is None else data_part.xy[0]+data_part.width
-    
-    data_df = data_df.iloc[data_part.xy[1]:end_row, data_part.xy[0]:end_col]
-    defects_df = defects_df.iloc[data_part.xy[1]:end_row, data_part.xy[0]:end_col]
-
-    logger.debug(f"""
-    Cropped with (xy={data_part.xy},width={data_part.width},height={data_part.height}) detectors data shape: {data_df.shape}
-    Cropped with (xy={data_part.xy},width={data_part.width},height={data_part.height}) defect data shape: {defects_df.shape}""")
-
     return data_df, defects_df
 
-@validate_call
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _unify_dfs(data_df: pd.DataFrame, defects_df: pd.DataFrame, unify_func: Optional[Callable] = None, unify_separatly: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
+    
+    if unify_func is not None:
+        data_df_values = dw.df_to_numpy(data_df)
+        defects_df_values = defects_df.to_numpy()
+        if unify_separatly:
+            logger.debug(f"""\nUnifying data separatly with {unify_func.__name__} func...""")
+            x_arr = np.concatenate([unify_func(data_df_values[:,:,:32]), unify_func(data_df_values[:,:,32:])],axis=2)
+        else:
+            logger.debug(f"""\nUnifying data together with {unify_func.__name__} func...""")
+            x_arr = unify_func(data_df_values)
+        y_arr = unify_func(defects_df_values)
+
+        data_df = pd.DataFrame(data=0, index=data_df.index, columns=data_df.columns, dtype='object')
+        for i in range(data_df.shape[0]):
+            for j in range(data_df.shape[0]):
+                data_df.iloc[i,j] = data_df_values[i,j]
+        defects_df = pd.DataFrame(data=defects_df_values, index=defects_df.index, columns=defects_df.columns)
+    return data_df, defects_df
+    
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _crop_data_df_and_defects_df(data_df: pd.DataFrame, 
+                                 defects_df: pd.DataFrame, 
+                                 xy: tuple[int,int] = (0,0),
+                                 width: Optional[PositiveInt] = None, 
+                                 height: Optional[PositiveInt] = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    
+    if xy == (0,0) and height is None and width is None:
+        return data_df, defects_df
+
+    end_row = None if height is None else xy[1]+height
+    end_col = None if width is None else xy[0]+width
+    
+    data_df = data_df.iloc[xy[1]:end_row, xy[0]:end_col]
+    defects_df = defects_df.iloc[xy[1]:end_row, xy[0]:end_col]
+
+    logger.debug(f"""
+    Cropped with (xy={xy},width={width},height={height}) detectors data shape: {data_df.shape}
+    Cropped with (xy={xy},width={width},height={height}) defect data shape: {defects_df.shape}""")
+    
+    return data_df, defects_df
+
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _get_df_from_defects_file(path_to_defects_file: os.PathLike) -> pd.DataFrame:
     """Read data file like "*_defects.csv" and returns
        pandas dataframe with preprocessed data from it"""
@@ -204,7 +232,8 @@ def _get_df_from_defects_file(path_to_defects_file: os.PathLike) -> pd.DataFrame
     df = pd.read_csv(path_to_defects_file, delimiter=';')
     return df[using_columns]
 
-@validate_call
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> np.ndarray:
     """Converte all data cells values from given pandas dataframe from
     string (describes 2D values array) to 1D float numpy array of 64 items"""
@@ -232,7 +261,8 @@ def _split_cell_string_value_to_numpy_array_of_64_values(df_cell_value: str) -> 
     amp_vals = np.pad(amp_vals, (abs(amp_vals.size-32), 0), constant_values=(0))
     return np.concatenate((time_vals, amp_vals), axis=0)
 
-@validate_call
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def _get_df_from_data_file(path_to_data_file: os.PathLike) -> str:
     """Read data file like "*_data.csv" and returns
        pandas dataframe with preprocessed data from it"""

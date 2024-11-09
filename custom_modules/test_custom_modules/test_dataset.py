@@ -3,6 +3,9 @@ from custom_modules.dataset import (
     get_crop_generator,
     get_augmented_crop_generator,
     get_x_and_y_data_dfs,
+    _read_data_df_and_defects_df,
+    _unify_dfs,
+    _crop_data_df_and_defects_df,
     _get_df_from_defects_file,
     _split_cell_string_value_to_numpy_array_of_64_values,
     _get_df_from_data_file)
@@ -83,6 +86,15 @@ class Test_get_batch_generator:
     
             
 class Test_get_x_and_y_data_dfs:
+    pass
+
+class Test__read_data_df_and_defects_df:
+    pass
+
+class Test__unify_dfs:
+    pass
+
+class Test__crop_data_df_and_defects_df:
     pass
 
 class Test_get_crop_generator:
