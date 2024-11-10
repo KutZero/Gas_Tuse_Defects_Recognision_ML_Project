@@ -8,18 +8,12 @@
 2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
 3) В общем виде: "help([Имя модуля].[Имя функции])".
 """
-import re
-import os
 import logging
-import itertools
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from typing import Union
 from typing_extensions import Annotated
-from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
+from pydantic import validate_call, PositiveInt, AfterValidator, Field
 
-PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
 PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
 
 # create logger
@@ -60,6 +54,7 @@ def calc_model_prediction_accuracy(pred_df: pd.DataFrame,
 
     return np.sum(np.abs(pred_arr - ref_arr)) / (ref_df.shape[0] * ref_df.shape[1])
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def normalize_data(arr: np.ndarray) -> np.ndarray:
     """
@@ -95,6 +90,7 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
     The arr min after normalization: {arr.min()}""")
 
     return arr
+
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def standardize_data(arr: np.ndarray) -> np.ndarray:

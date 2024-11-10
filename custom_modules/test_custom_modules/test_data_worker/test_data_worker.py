@@ -12,18 +12,19 @@ import os
 import matplotlib.pyplot as plt
 import itertools
 
-from contextlib import nullcontext as does_not_raise
-from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
+from pydantic import ValidationError
 
 
 class Test_calc_model_prediction_accuracy:
     pass
+
 
 class Test_normalize_data:
     def test_zeros_input_array(self):
         input_value = np.zeros((2,2), dtype='float32')
         assert (normalize_data(input_value) == input_value).all()
 
+    
     @pytest.mark.parametrize(
     'input_value, res',
     [
@@ -34,6 +35,7 @@ class Test_normalize_data:
     ])
     def test_correct_input(self, input_value, res):
         assert (normalize_data(input_value) == res).all()
+
 
 class Test_standardize_data:
     def test_zeros_input_array(self):
@@ -50,6 +52,7 @@ class Test_standardize_data:
     ])
     def test_correct_input(self, input_value, res):
         assert (standardize_data(input_value) == res).all()
+
 
 if __name__ == "__main__":
     pytest.main()
