@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Optional, Generator
+from typing import Callable, Optional
 from pydantic import BaseModel, field_validator, computed_field, PositiveInt
 from pydantic.dataclasses import dataclass
 from typing_extensions import Annotated
