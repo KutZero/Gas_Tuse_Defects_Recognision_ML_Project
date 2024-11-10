@@ -1,7 +1,5 @@
 from custom_modules.dataset import (
-    get_batch_generator,
     get_crop_generator,
-    get_augmented_crop_generator,
     get_x_and_y_data_dfs,
     _read_data_df_and_defects_df,
     _unify_dfs,
@@ -21,14 +19,16 @@ import itertools
 from contextlib import nullcontext as does_not_raise
 from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
 
+
 @pytest.fixture
 def csv_file_path(tmpdir_factory):
-    df = pd.DataFrame({'col1': [1, 2, 1], 
-                       'col2': [3, 4, 1],
-                       'col3': [5, 6, 1]}) 
+    df = pd.DataFrame({'col1': [1,2,1], 
+                       'col2': [3,4,1],
+                       'col3': [5,6,1]}) 
     filename = str(tmpdir_factory.mktemp('data').join('file.csv'))
     df.to_csv(filename)
     return filename
+
 
 @pytest.fixture()
 def test_df():
@@ -36,78 +36,188 @@ def test_df():
                        'col2': [5,6,7,8],
                        'col3': [9,10,11,12]})
     return df
-
-class Test_get_batch_generator:
-    @pytest.mark.parametrize(
-        'input_sequance, batch_size, output_sequance',
-        [
-            # input sequance bigger than batch size and can't be integer divided
-            ([0,1,2,3,4,5], 4, [np.array([0,1,2,3]), np.array([4,5])]),
-            # input sequance less than batch size and can't be integer divided
-            ([0,1,2], 4, [np.array([0,1,2])]),
-            # input sequance bigger than batch size and can be integer divided
-            ([0,1,2,3], 2, [np.array([0,1]), np.array([2,3])]),
-        ]
-    )
-    def test_correct_input_where_items_are_simple_data_type(self, input_sequance, batch_size, output_sequance):
-        input_gen = (i for i in input_sequance)
-        res_sequance = [batch for batch in get_batch_generator(input_gen, batch_size)]
-        for res_seq, inp_seq in zip(res_sequance, output_sequance): 
-            assert (res_seq == inp_seq).all()
-
-
-    
-    @pytest.mark.parametrize(
-        'input_sequance, batch_size, output_sequance',
-        [
-            # input sequance bigger than batch size and can't be integer divided
-            ([np.array([0,1]), np.array([2,3]), np.array([4,5])], 2, [np.array([[0,1], [2,3]]), np.array([4,5])]),
-            # input sequance less than batch size and can't be integer divided
-            ([np.array([0,1]), np.array([2,3]), np.array([4,5])], 4, [np.array([[0,1], [2,3], [4,5]])]),
-            # input sequance bigger than batch size and can be integer divided
-            ([np.array([0,1]), np.array([2,3]), np.array([4,5]), np.array([6,7])], 2, [np.array([[0,1], [2,3]]), np.array([[4,5], [6,7]])]),
-        ]
-    )
-    def test_correct_input_where_items_are_numpy_ndarrays(self, input_sequance, batch_size, output_sequance):
-        input_gen = (i for i in input_sequance)
-        res_sequance = [batch for batch in get_batch_generator(input_gen, batch_size)]
-        for res_seq, inp_seq in zip(res_sequance, output_sequance): 
-            assert (res_seq == inp_seq).all()
-
-    @pytest.mark.parametrize(
-        'input_sequance, batch_size',
-        [
-            (1, 1),
-        ]
-    )
-    def test_wrong_type_input(self, input_sequance, batch_size):
-        with pytest.raises(TypeError):
-            assert get_batch_generator((i for i in input_sequance), batch_size)
     
             
 class Test_get_x_and_y_data_dfs:
     pass
 
+
 class Test__read_data_df_and_defects_df:
     pass
+
 
 class Test__unify_dfs:
     pass
 
+
 class Test__crop_data_df_and_defects_df:
     pass
 
-class Test_get_crop_generator:
-    pass
-
-class Test_get_augmented_crop_generator:
-    pass
 
 class Test__get_df_from_defects_file:
     pass
-    
-class Test__split_cell_string_value_to_numpy_array_of_64_values:
 
+
+class Test__get_df_from_data_file:
+    pass
+
+
+class Test_get_crop_generator:
+    @pytest.mark.parametrize(
+        'input_arr, crop_size, crop_step, augmentations, valid_res',
+        [
+
+            # input_arr can't be divided by crop_size with crop_step, redundant rows and cols ignored
+            (np.array([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9],
+                       [10, 11, 12]]), 2, 2, False, [np.array([[1,2],[4,5]]),
+                                                     np.array([[7,8],[10,11]])]),
+
+            # input_arr can be divided by crop_size with crop_step
+            (np.array([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9],
+                       [10, 11, 12]]), 2, 1, False, [np.array([[1,2], [4,5]]),
+                                                     np.array([[2,3], [5,6]]),
+                                                     np.array([[4,5], [7,8]]),
+                                                     np.array([[5,6], [8,9]]),
+                                                     np.array([[7,8], [10,11]]),
+                                                     np.array([[8,9], [11,12]])]),
+            
+            #input_arr can be divided by crop_size with crop_step. Augmentations used
+            (np.array([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9]]), 2, 1, True, [np.array([[1,2], [4,5]]),
+                                                 np.array([[2,3], [5,6]]),
+                                                 np.array([[4,5], [7,8]]),
+                                                 np.array([[5,6], [8,9]]),
+                                                 np.array([[7,8], [4,5]]),
+                                                 np.array([[8,9], [5,6]]),
+                                                 np.array([[4,5], [1,2]]),
+                                                 np.array([[5,6], [2,3]]),
+                                                 np.array([[3,2], [6,5]]),
+                                                 np.array([[2,1], [5,4]]),
+                                                 np.array([[6,5], [9,8]]),
+                                                 np.array([[5,4], [8,7]]),
+                                                 np.array([[9,8], [6,5]]),
+                                                 np.array([[8,7], [5,4]]),
+                                                 np.array([[6,5], [3,2]]),
+                                                 np.array([[5,4], [2,1]]),
+                                                 np.array([[3,6], [2,5]]),
+                                                 np.array([[6,9], [5,8]]),
+                                                 np.array([[2,5], [1,4]]),
+                                                 np.array([[5,8], [4,7]]),
+                                                 np.array([[9,6], [8,5]]),
+                                                 np.array([[6,3], [5,2]]),
+                                                 np.array([[8,5], [7,4]]),
+                                                 np.array([[5,2], [4,1]]),
+                                                 np.array([[1,4], [2,5]]),
+                                                 np.array([[4,7], [5,8]]),
+                                                 np.array([[2,5], [3,6]]),
+                                                 np.array([[5,8], [6,9]]),
+                                                 np.array([[7,4], [8,5]]),
+                                                 np.array([[4,1], [5,2]]),
+                                                 np.array([[8,5], [9,6]]),
+                                                 np.array([[5,2], [6,3]])]),
+            
+            #input_arr can't be divided by crop_size with crop_step. Augmentations used
+            (np.array([[1, 2, 3],
+                       [4, 5, 6],
+                       [7, 8, 9]]), 2, 2, True, [np.array([[1,2], [4,5]]),
+                                                 np.array([[4,5], [1,2]]),
+                                                 np.array([[2,1], [5,4]]),
+                                                 np.array([[5,4], [2,1]]),
+                                                 np.array([[2,5], [1,4]]),
+                                                 np.array([[5,2], [4,1]]),
+                                                 np.array([[1,4], [2,5]]),
+                                                 np.array([[4,1], [5,2]])]),
+            # input_arr can't be divided by crop_size with crop_step, redundant rows and cols ignored.
+            # The input_arr has first 2 non empty dims and 1 empty one
+            (np.array([[[1], [2], [3]],
+                       [[4], [5], [6]]]), 2, 1, False, [np.array([[[1],[2]], [[4],[5]]]),
+                                                        np.array([[[2],[3]], [[5],[6]]])]),
+
+    ]
+    )
+    def test_correct_input(self, input_arr, crop_size, crop_step, augmentations, valid_res):
+        get_res = list(get_crop_generator(input_arr, crop_size, crop_step, augmentations))
+        
+        assert len(get_res) == len(valid_res)
+        
+        for valid_res_item, get_res_item in zip(valid_res, get_res):
+            assert (valid_res_item == get_res_item).all()
+
+   
+    @pytest.mark.parametrize(
+    'input_arr, crop_size, crop_step',
+    [
+        # crop_size bigger than rows quantity 
+        (np.array([[1, 2, 3, 4],
+                   [4, 5, 6, 6],
+                   [7, 8, 9, 6]]), 4, 1),
+        # crop_size bigger than cols quantity
+        (np.array([[1, 2],
+                   [4, 5],
+                   [7, 8]]), 3, 1),
+        # crop_step bigger than rows quantity
+        (np.array([[1, 2, 3, 4],
+                   [4, 5, 6, 4],
+                   [7, 8, 9, 4]]), 1, 4),
+        # crop_step bigger than cols quantity
+        (np.array([[1, 2],
+                   [4, 5],
+                   [7, 8]]), 1, 3),
+        # crop_size bigger than rows and cols quantity
+        (np.array([[1, 2,3],
+                   [4, 5, 6],
+                   [7, 8, 9]]), 4, 1),
+        # crop_step bigger than rows and cols quantity
+        (np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]]), 1, 4),
+        
+        # input_arr has less than 2 dims
+        (np.array([1, 2, 3]), 1, 1),
+        # input_arr has less than 2 non empty dims
+        (np.array([[1, 2, 3]]), 1, 1),
+        # input_arr first dim is empty 
+        (np.array([[[1 ,2, 3],
+                    [1 ,2, 3]]]), 1, 1),
+        # input_arr second dim is empty 
+        (np.array([[[1, 2, 3]],
+                   [[1, 2, 3]]]), 1, 1),
+    ]
+    )
+    def test_uncorrect_value_input(self, input_arr, crop_size, crop_step):
+        with pytest.raises(ValueError):
+            next(get_crop_generator(input_arr, crop_size, crop_step))
+
+    @pytest.mark.parametrize(
+    'input_arr, crop_size, crop_step, augmentations',
+    [
+        # input_arr is not np.array
+        ('test', 4, 1, False),
+        # crop_size is not int
+        (np.array([[1, 2],
+                   [4, 5],
+                   [7, 8]]), 'test', 1, False),
+        # crop_step is not int
+        (np.array([[1, 2, 3, 4],
+                   [4, 5, 6, 4],
+                   [7, 8, 9, 4]]), 1, 'test', False),
+        # augmentations  is not bool
+        (np.array([[1, 2],
+                   [4, 5],
+                   [7, 8]]),  1, 3, 'test'),
+    ]
+    )
+    def test_uncorrect_type_input(self, input_arr, crop_size, crop_step, augmentations):
+        with pytest.raises(ValidationError):
+            next(get_crop_generator(input_arr, crop_size, crop_step, augmentations))
+
+
+class Test__split_cell_string_value_to_numpy_array_of_64_values:
     def test_32_time_amp_pars_str_input_without_spaces(self):
         input_value = """
         25.8:37.947,26.1:-54.259,26.2:61.709,26.3:-59.867,
@@ -135,7 +245,8 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         -41.183, 34.871, -27.713, 29.933,
                         -34.871, -26.533, -28.284, -28.284]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-        
+
+    
     def test_32_time_amp_pars_str_input_with_spaces(self):
         input_value = """
         25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
@@ -163,7 +274,8 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         -41.183, 34.871, -27.713, 29.933,
                         -34.871, -26.533, -28.284, -28.284]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-        
+
+    
     def test_31_time_amp_pars_str_input(self):
         input_value = """
         25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
@@ -191,6 +303,7 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         36.222, -41.183, 34.871, -27.713, 
                         29.933, -34.871, -26.533, -28.284]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
+
     
     def test_34_time_amp_pars_str_input(self):
         input_value = """
@@ -205,7 +318,8 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
         41.5:-28.284,41.5:-28.284"""
         with pytest.raises(ValueError):
             assert _split_cell_string_value_to_numpy_array_of_64_values(input_value)
-        
+
+    
     def test_6_time_amp_pars_str_input(self):
         input_value = """
         25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
@@ -227,17 +341,20 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         0, 0, 37.947, -54.259, 
                         61.709, -59.867, 55.136, -46.648]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-        
+
+    
     def test_0_time_amp_pars_str_input(self):
         input_value = """--"""
         res = np.zeros((64)).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-        
+
+    
     def test_wrong_str_input(self):
         input_value = """fgreg tw345.345,4234;43tg5,l4y,45t,34t3q4ft4644;;546;:454--"""
         res = np.zeros((64)).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-        
+
+    
     def test_6_time_amp_pars_with_uncomplete_pars_str_input(self):
         input_value = """
         25.8:, 26.1:-54.259, 26.2:61.709, 26.3:-59.867,
@@ -259,10 +376,7 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         0, 0, 0, 0, 
                         -54.259, 61.709, -59.867, 55.136]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
-    
 
-class Test__get_df_from_data_file:
-    pass
 
 if __name__ == "__main__":
     pytest.main()

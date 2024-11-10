@@ -15,7 +15,7 @@ import numpy as np
 import os
 import re
 from pydantic import validate_call, PositiveInt
-from typing import Callable, Optional, Generator
+from typing import Callable, Optional, Generator, Iterable
 
 import custom_modules.data_worker as dw
 
@@ -24,35 +24,10 @@ logger = logging.getLogger('main.'+__name__)
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def get_batch_generator(generator, batch_size: PositiveInt):
-    """Transform np.ndarray or simple data type generator into ndarray batch generator"""
-    #if batch_size < 1:
-    #    raise ValueError('Batch size should be bigger than 1')
-    # check is generator itarable
-    try:
-        iterator = iter(generator)
-    except TypeError:
-        raise TypeError('The generator param should be iterable')
-    
-    batch = list()
-    i = 0
-    try:
-        while True:
-            if i < batch_size:
-                batch.append(next(generator))
-                i+=1
-            else:
-                res = np.stack(batch) if type(batch[0]) == np.ndarray else np.array(batch)
-                i=0
-                batch = list()
-                yield res
-    except:
-        if batch:
-            yield np.stack(batch) if type(batch[0]) == np.ndarray else np.array(batch)
-
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
+def get_crop_generator(arr: np.ndarray, 
+                       crop_size: PositiveInt, 
+                       crop_step: PositiveInt, 
+                       augmentations: bool = False) -> Iterable[np.array]:
     """
     Create generator for sliding window across arr with given step and crop size
 
@@ -65,54 +40,47 @@ def get_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: Posit
     crop_step: PositiveInt
         The size of the sliding window
         step making crops
+    augmentations: bool
+        Apply of not augmentations to the arr
+        sliding crops. Augmentations to be used: 
+        rotation for 90 degree (4 times); 
+        horizontal and vertical mirroring.
 
     Yields
     -------
     out : numpy.ndarray
-        The augmented numpy array with crops data
+        The numpy array with sliding crops data
     """
-    for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
-        for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
-            yield arr[i:i+crop_size, j:j+crop_size]
-
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def get_augmented_crop_generator(arr: np.ndarray, crop_size: PositiveInt, crop_step: PositiveInt):
-    """
-    Augnment data of the arr which store crops data.
-    Used augmentations: rotation for 90 degree (4 times);
-    horizontal and vertical mirroring.
-    
-    Parameters
-    ----------
-    arr : numpy.ndarray
-        The numpy array with crops data
-    crop_size: PositiveInt
-        The size of the square crop side
-    crop_step: PositiveInt
-        The size of the sliding window
-        step making crops
-    
-    Yields
-    -------
-    out : numpy.ndarray
-        The augmented numpy array with crops data
-    """
-    message = f'''
-    The input array cells: {arr.shape} 
+    in_arr_shape = arr.shape
+        
+    logger.debug(f'''
+    The input array cells: {in_arr_shape} 
     The crop size: {crop_size} 
-    The crop step: {crop_step}'''
-    
-    arr = np.concatenate([arr, np.flip(arr,1)],axis=0)
-    arr = np.concatenate([arr, np.flip(arr,0)],axis=0)
+    The crop step: {crop_step}''')
 
-    arr1 = np.concatenate([arr, np.rot90(arr,2,[0,1])],axis=0)
-    arr2 = np.concatenate([np.rot90(arr,1,[0,1]), np.rot90(arr,3,[0,1])],axis=1)
+    arr = dw.match_ndarray_for_crops_dividing(arr, crop_size, crop_step, mode='crop')
 
-    arrs = np.split(arr1, 8, axis=0) + np.split(arr2, 8, axis=1)
+    if arr.shape != in_arr_shape:
+        logger.warning(f'''
+    The arr with shape = {in_arr_shape} cant be divided by {crop_size=} with {crop_step=}. 
+    The custom_modules.data_worker.match_ndarray_for_crops_dividing() with mode="crop" used. The new
+    arr shape={arr.shape}''')
     
-    logger.debug(message)
-    return itertools.chain(*[get_crop_generator(arr, crop_size, crop_step) for arr in arrs])
+    if augmentations:
+        arr1 = np.concatenate([arr, np.flip(arr,0)],axis=0)
+        arr1 = np.concatenate([arr1, np.flip(arr1,1)],axis=0)
+        arr2 = np.rot90(arr1,1,[0,1])
+        arrs = np.split(arr1, 4, axis=0) + np.split(arr2, 4, axis=1)
+
+        for arr in arrs:
+            for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
+                for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
+                    yield arr[i:i+crop_size, j:j+crop_size]
+
+    else:
+        for i in range(0, arr.shape[0] - crop_size + 1, crop_step):  
+            for j in range(0, arr.shape[1] - crop_size + 1, crop_step):  
+                yield arr[i:i+crop_size, j:j+crop_size]
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
@@ -138,17 +106,26 @@ def get_x_and_y_data_dfs(data_part: dw.DataPart) -> tuple[pd.DataFrame, pd.DataF
     logger.debug(f"""
     The input data_part: {data_part}""")
 
-    data_df, defects_df = _read_data_df_and_defects_df(data_part.data_path, data_part.defects_path)
+    data_df, defects_df = _read_data_df_and_defects_df(data_part.data_path, 
+                                                       data_part.defects_path)
 
-    data_df, defects_df = _unify_dfs(data_df, defects_df, data_part.unify_func, data_part.unify_separatly)
+    data_df, defects_df = _unify_dfs(data_df, 
+                                     defects_df, 
+                                     data_part.unify_func, 
+                                     data_part.unify_separatly)
 
-    data_df, defects_df = _crop_data_df_and_defects_df(data_df, defects_df, data_part.xy, data_part.width, data_part.height)
+    data_df, defects_df = _crop_data_df_and_defects_df(data_df, 
+                                                       defects_df, 
+                                                       data_part.xy, 
+                                                       data_part.width, 
+                                                       data_part.height)
 
     return data_df, defects_df
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def _read_data_df_and_defects_df(data_path: os.PathLike, defects_path: os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _read_data_df_and_defects_df(data_path: os.PathLike, 
+                                 defects_path: os.PathLike) -> tuple[pd.DataFrame, pd.DataFrame]:
     data_df = _get_df_from_data_file(data_path)
     defects_df = _get_df_from_defects_file(defects_path)
     
@@ -179,7 +156,10 @@ def _read_data_df_and_defects_df(data_path: os.PathLike, defects_path: os.PathLi
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def _unify_dfs(data_df: pd.DataFrame, defects_df: pd.DataFrame, unify_func: Optional[Callable] = None, unify_separatly: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _unify_dfs(data_df: pd.DataFrame, 
+               defects_df: pd.DataFrame, 
+               unify_func: Optional[Callable[[np.array],np.array]] = None, 
+               unify_separatly: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
     
     if unify_func is not None:
         data_df_values = dw.df_to_numpy(data_df)
