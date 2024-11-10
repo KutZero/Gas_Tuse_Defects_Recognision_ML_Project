@@ -9,15 +9,28 @@ import logging
 import pandas as pd
 import numpy as np
 
-from typing_extensions import Annotated
-from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
-
-PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
+from pydantic import validate_call, PositiveInt
+from functools import wraps
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
+
+def check_is_arr_valid_decorator(func):
+    @wraps(func)
+    def wrapper(arr,*args,**kvargs):
+        if arr.ndim < 2:
+            raise ValueError(f'The input array should have at least 2 ndims, but got {arr.ndim=}')
+        if arr.shape[0] == 1:
+            raise ValueError(f"The input array first ndim should be at least size of 2, but got {arr.shape=}")
+        if arr.shape[1] == 1:
+            raise ValueError(f"The input array's second ndim should be at least size of 2, but got {arr.shape=}")  
+        return func(arr,*args,**kvargs)
+    return wrapper
+
+    
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_arr_valid_decorator
 def match_ndarray_for_crops_dividing(arr: np.ndarray, 
                                      crop_size: PositiveInt, 
                                      crop_step: PositiveInt,
@@ -48,7 +61,13 @@ def match_ndarray_for_crops_dividing(arr: np.ndarray,
     The input ndarray shape: {arr.shape}"""
 
     if not mode in ('crop','extend'):
-        raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode}')
+        raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode=}') 
+    if crop_size > arr.shape[0] or crop_size > arr.shape[1]:
+        raise ValueError("Crop size should be bigger or equal " + 
+                         f"than the arr less axis. The {arr.shape=}, but got the {crop_size=}")
+    if crop_step > arr.shape[0] or crop_step > arr.shape[1]:
+        raise ValueError("Crop step should be bigger or equal " + 
+                         f"than the arr less axis. The {arr.shape=}, but got the {crop_step=}")
     
     new_rows = crop_step - ((arr.shape[0] - crop_size) % crop_step)
     new_cols = crop_step - ((arr.shape[1] - crop_size) % crop_step)
@@ -72,7 +91,9 @@ def match_ndarray_for_crops_dividing(arr: np.ndarray,
     
     return arr
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_arr_valid_decorator
 def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt, only_horizontal: bool=False) -> np.ndarray:
     """
     Extend np.ndarray for increasing network model prediction or
@@ -105,7 +126,11 @@ def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt, only_
         
     """
     message = f"""
-    The input ndarray shape: {arr.shape}"""
+    The input ndarray shape: {arr.shape}"""      
+    if crop_size > arr.shape[0] or crop_size > arr.shape[1]:
+        raise ValueError("Crop size should be bigger or equal " + 
+                         f"than the arr less axis. The {arr.shape=}, but got the {crop_size=}")
+    
     if not only_horizontal:
         arr = np.pad(arr, ((crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-1)]), 'reflect')
     arr = np.pad(arr, ((0, 0),(crop_size-1, crop_size-1),*[(0,0) for i in range(arr.ndim-2)]), 'wrap')
