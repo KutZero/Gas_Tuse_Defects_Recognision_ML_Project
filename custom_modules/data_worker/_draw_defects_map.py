@@ -5,36 +5,41 @@
 2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
 3) В общем виде: "help([Имя модуля].[Имя функции])".
 """
+import re
+import os
 import logging
 import pandas as pd
 import numpy as np
-import re
 import matplotlib.pyplot as plt
 from matplotlib.colors import Colormap
 
+from typing import Callable, Optional
 from matplotlib import ticker
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.patches import Rectangle
 from shapely.geometry import Polygon as shPolygon
 from shapely.ops import unary_union
 from typing_extensions import Annotated
-from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
+from pydantic import validate_call, PositiveInt, AfterValidator, Field
 
 PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
-PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, *, path_to_save=None, dpi=200, **kwargs):
+def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, *, 
+                                   path_to_save: Optional[os.PathLike] = None, 
+                                   dpi: int = 200, **kwargs):
     """
     Draw a zeros quantity in read x data.
     """
     data_df = data_df.map(lambda x: np.count_nonzero(x == 0))
     draw_defects_map(data_df, path_to_save, dpi, **kwargs)
 
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
 def draw_defects_map(*args, path_to_save=None, dpi=200, **kwargs):
     """
     Draw a defects map from the readed data.
@@ -52,8 +57,12 @@ def draw_defects_map(*args, path_to_save=None, dpi=200, **kwargs):
     plt.show()
     plt.close()
 
+    
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFrame, *, pol_alfa: PercentFloat=1.0, path_to_save=None, dpi=200, **kwargs):
+def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFrame, *, 
+                                            pol_alfa: PercentFloat=1.0, 
+                                            path_to_save: Optional[os.PathLike] = None, 
+                                            dpi: int = 200, **kwargs):
     """
     Draw a defects map from the readed data with reference map owerlapption.
 
@@ -98,8 +107,11 @@ def draw_defects_map_with_reference_owerlap(df: pd.DataFrame, ref_df: pd.DataFra
     plt.show()
     plt.close()
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[Rectangle], *, path_to_save=None, dpi=200, **kwargs):
+def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[Rectangle], *, 
+                                             path_to_save: Optional[os.PathLike] = None, 
+                                             dpi: int = 200, **kwargs):
     """
     Draw a defects map from the readed data with reference map owerlapption.
 
@@ -126,7 +138,8 @@ def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[
         plt.savefig(path_to_save, bbox_inches='tight', dpi=dpi)
     plt.show()
     plt.close()
-    
+
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _build_defects_map(df: pd.DataFrame, 
                         /,
@@ -241,7 +254,9 @@ def _build_defects_map(df: pd.DataFrame,
                 
     return fig, ax
 
-def _approx_df(df, bins):
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _approx_df(df: pd.DataFrame, bins: PositiveInt) -> pd.DataFrame:
     """
     Approximate the df by given bins.
     If true approximated the df's cell values
@@ -256,7 +271,9 @@ def _approx_df(df, bins):
         df = df.map(lambda x: value if (x >= value-step/2) and (x < value+step/2) else x)
     return df
 
-def _polygonize(df, fig, ax, polygonize_data):
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _polygonize(df: pd.DataFrame, fig, ax, polygonize_data):
     """
     Draw polygons over map by every unique value
     """
@@ -304,6 +321,7 @@ def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
         arr = np.insert(arr,i+1,arr[i]+step)
     return _add_index_fillers(arr, step, i+1)
 
+    
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _cals_labels_paddings(locs: np.ndarray, step: int=1):
     """Calc labels paddings for avoid labels overlapping"""
@@ -312,6 +330,7 @@ def _cals_labels_paddings(locs: np.ndarray, step: int=1):
         if locs[i+1] - locs[i] < step / 2:
             label_paddings[i] = 1
     return label_paddings
+
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _calc_labels_and_locs(arr: np.ndarray, step: int=1):
