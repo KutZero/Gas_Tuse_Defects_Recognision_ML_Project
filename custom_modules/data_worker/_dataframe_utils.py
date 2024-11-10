@@ -9,16 +9,24 @@ import logging
 import pandas as pd
 import numpy as np
 
-from typing_extensions import Annotated
-from pydantic import ValidationError, validate_call, PositiveInt, AfterValidator, Field
-
-PositiveInt = Annotated[int, Field(gt=0), AfterValidator(lambda x: int(x))]
+from pydantic import validate_call, PositiveInt
+from functools import wraps
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
 
+def check_is_df_has_multiindex_decorator(func):
+    @wraps(func)
+    def wrapper(df,*args,**kvargs):
+        if isinstance(df.index, pd.MultiIndex) or isinstance(df.columns, pd.MultiIndex):
+            raise ValueError(f'The df should not have MultiIndex')
+        return func(df,*args,**kvargs)
+    return wrapper
+
+    
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_df_has_multiindex_decorator
 def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     """
     Roll a dataframe like numpy.roll method.
@@ -49,8 +57,8 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
         
     """
     if not axis in (0,1):
-        raise ValueError("""The axis should be 0 or 1 because only row 
-        wise of col wise rolling supported""")
+        raise ValueError("The axis should be 0 or 1 because only row " + 
+                         "wise of col wise rolling supported")
     
     if shift == 0:
         return df
@@ -69,7 +77,9 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     return pd.DataFrame(data=df_values, index=df_indexes, 
                         columns=df_columns)
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_df_has_multiindex_decorator
 def match_df_for_crops_dividing(df: pd.DataFrame, 
                                 crop_size: PositiveInt, 
                                 crop_step: PositiveInt,
@@ -98,9 +108,13 @@ def match_df_for_crops_dividing(df: pd.DataFrame,
     """
     message = f"""
     The input df shape: {df.shape}"""
-    if min([crop_size, crop_step]) > min(df.shape):
-        raise ValueError("""Crop size and crop step should be bigger or equal
-        than the given df less axis""")
+    if crop_size > df.shape[0] or crop_size > df.shape[1]:
+        raise ValueError("Crop size should be bigger or equal " + 
+                         "than the given df less axis")
+
+    if crop_step > df.shape[0] or crop_step > df.shape[1]:
+        raise ValueError("Crop size should be bigger or equal " + 
+                         "than the given df less axis")
 
     if not mode in ('crop','extend'):
         raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode}')
@@ -126,7 +140,9 @@ def match_df_for_crops_dividing(df: pd.DataFrame,
     
     return df
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_df_has_multiindex_decorator
 def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_horizontal: bool=False) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
@@ -160,9 +176,9 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_hori
     """
     message = f"""
     The input df shape: {df.shape}"""
-    if crop_size > min(df.shape):
-        raise ValueError("""Crop size should be bigger or equal
-        than the given df less axis""")
+    if crop_size > df.shape[0] or crop_size > df.shape[1]:
+        raise ValueError("Crop size should be bigger or equal " + 
+                         "than the given df less axis")
     
     df_values = df.to_numpy()
     df_indexes = df.index.to_numpy()
@@ -183,7 +199,9 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_hori
     
     return df
 
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_df_has_multiindex_decorator
 def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     """
     Reshape df with numpy.array in each cell of 64 items
@@ -204,6 +222,7 @@ def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     x = df.to_numpy()
     return np.stack([np.stack([x[i,j] for i in range(x.shape[0])],axis=0)
         for j in range(x.shape[1])],axis=1)
+
 
 def _check_df_cell_is_correct_numpy_array(cell_value):
     """Check that every pandas dataframe cell is a flat numpy array of floats"""
