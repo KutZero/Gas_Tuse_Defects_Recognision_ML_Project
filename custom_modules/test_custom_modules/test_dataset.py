@@ -1,9 +1,6 @@
 from custom_modules.dataset import (
     get_crop_generator,
-    get_x_and_y_data_dfs,
-    _read_data_df_and_defects_df,
-    _unify_dfs,
-    _crop_data_df_and_defects_df,
+    get_data_df,
     _get_df_from_defects_file,
     _split_cell_string_value_to_numpy_array_of_64_values,
     _get_df_from_data_file)
@@ -38,15 +35,7 @@ def test_df():
     return df
     
             
-class Test_get_x_and_y_data_dfs:
-    pass
-
-
-class Test__read_data_df_and_defects_df:
-    pass
-
-
-class Test__unify_dfs:
+class get_data_df:
     pass
 
 
@@ -275,18 +264,10 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         -34.871, -26.533, -28.284, -28.284]).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
 
-    
-    def test_31_time_amp_pars_str_input(self):
-        input_value = """
-        25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
-        26.5:55.136,26.6: -46.648,27.1:39.598,29.1:47.666,
-        29.3:-54.845,29.4 :52.46,29.5:-38.781,29.7:31.496,
-        30.4:27.129,30.5:-35.327 , 30.7:34.409,32.2:42.332,
-        32.3 : -48.99,32.5:44.181,32.6:-30.463,33.5:-33.466,
-        33.7:32,34.8:30.984,34.9:-29.394 , 35.2:36.222,
-        35.3:-41.183,35.5:34.871,36.1:-27.713,38.3:29.933,
-        38.4:-34.871,39.1:-26.533,41.5:-28.284"""
-        res = np.array([0, 25.8, 26.1, 26.2, 
+    @pytest.mark.parametrize(
+    'pad_type, res',
+    [
+        ('start', np.array([0, 25.8, 26.1, 26.2, 
                         26.3, 26.5, 26.6, 27.1, 
                         29.1, 29.3, 29.4, 29.5, 
                         29.7, 30.4, 30.5, 30.7, 
@@ -301,8 +282,37 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
                         42.332, -48.99, 44.181, -30.463, 
                         -33.466, 32, 30.984, -29.394, 
                         36.222, -41.183, 34.871, -27.713, 
-                        29.933, -34.871, -26.533, -28.284]).astype(float)
-        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
+                        29.933, -34.871, -26.533, -28.284]).astype(float)),
+        
+        ('end', np.array([25.8,  26.1,  26.2, 26.3,  
+                          26.5,  26.6,  27.1, 29.1,  
+                          29.3,  29.4,  29.5,  29.7,  
+                          30.4,  30.5,  30.7,  32.2,  
+                          32.3,  32.5, 32.6, 33.5,  
+                          33.7,  34.8, 34.9, 35.2,  
+                          35.3,  35.5, 36.1, 38.3,
+                          38.4,  39.1, 41.5, 0.,  
+                          37.947, -54.259, 61.709, -59.867,  
+                          55.136, -46.648, 39.598, 47.666, 
+                          -54.845, 52.46 , -38.781, 31.496,  
+                          27.129, -35.327, 34.409, 42.332, 
+                          -48.99, 44.181, -30.463, -33.466,  
+                          32., 30.984, -29.394, 36.222,
+                          -41.183,  34.871, -27.713, 29.933, 
+                          -34.871, -26.533, -28.284, 0.]).astype(float))
+    ]
+    )
+    def test_31_time_amp_pars_str_input(self, pad_type, res):
+        input_value = """
+        25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
+        26.5:55.136,26.6: -46.648,27.1:39.598,29.1:47.666,
+        29.3:-54.845,29.4 :52.46,29.5:-38.781,29.7:31.496,
+        30.4:27.129,30.5:-35.327 , 30.7:34.409,32.2:42.332,
+        32.3 : -48.99,32.5:44.181,32.6:-30.463,33.5:-33.466,
+        33.7:32,34.8:30.984,34.9:-29.394 , 35.2:36.222,
+        35.3:-41.183,35.5:34.871,36.1:-27.713,38.3:29.933,
+        38.4:-34.871,39.1:-26.533,41.5:-28.284"""
+        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value, pad_type) == res).all()
 
     
     def test_34_time_amp_pars_str_input(self):
@@ -319,28 +329,25 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
         with pytest.raises(ValueError):
             assert _split_cell_string_value_to_numpy_array_of_64_values(input_value)
 
-    
-    def test_6_time_amp_pars_str_input(self):
+    @pytest.mark.parametrize(
+    'pad_type, res',
+    [
+        ('start', np.concatenate([np.zeros(26),
+                                  np.array([25.8, 26.1, 26.2, 26.3, 26.5, 26.6]), 
+                                  np.zeros(26),
+                                  np.array([37.947, -54.259, 61.709, -59.867, 55.136, -46.648])]).astype(float)),
+        
+        ('end', np.concatenate([np.array([25.8, 26.1, 26.2, 26.3, 26.5, 26.6]), 
+                                np.zeros(26), 
+                                np.array([37.947, -54.259, 61.709, -59.867, 55.136, -46.648]), 
+                                np.zeros(26)]).astype(float))
+    ]
+    )
+    def test_6_time_amp_pars_str_input(self, pad_type, res):
         input_value = """
         25.8:37.947, 26.1:-54.259,26.2:61.709,26.3:-59.867,
         26.5:55.136,26.6: -46.648,"""
-        res = np.array([0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 25.8, 26.1, 
-                        26.2, 26.3, 26.5, 26.6,
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 37.947, -54.259, 
-                        61.709, -59.867, 55.136, -46.648]).astype(float)
-        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
+        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value, pad_type) == res).all()
 
     
     def test_0_time_amp_pars_str_input(self):
@@ -354,28 +361,22 @@ class Test__split_cell_string_value_to_numpy_array_of_64_values:
         res = np.zeros((64)).astype(float)
         assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
 
-    
-    def test_6_time_amp_pars_with_uncomplete_pars_str_input(self):
+
+    @pytest.mark.parametrize(
+    'pad_type, res',
+    [
+        ('start', np.concatenate([np.zeros(28), np.array([26.1, 26.2, 26.3, 26.5]),
+                                  np.zeros(28), np.array([-54.259, 61.709, -59.867, 55.136])], axis=0).astype(float)),
+        
+        ('end', np.concatenate([np.array([26.1, 26.2, 26.3, 26.5]), np.zeros(28),
+                                np.array([-54.259, 61.709, -59.867, 55.136]), np.zeros(28)], axis=0).astype(float))
+    ]
+    )
+    def test_6_time_amp_pars_with_uncomplete_pars_str_input(self, pad_type, res):
         input_value = """
         25.8:, 26.1:-54.259, 26.2:61.709, 26.3:-59.867,
         26.5:55.136, : -46.648,"""
-        res = np.array([0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        26.1, 26.2, 26.3, 26.5,
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        0, 0, 0, 0, 
-                        -54.259, 61.709, -59.867, 55.136]).astype(float)
-        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value) == res).all()
+        assert (_split_cell_string_value_to_numpy_array_of_64_values(input_value, pad_type) == res).all()
 
 
 if __name__ == "__main__":
