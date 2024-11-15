@@ -45,8 +45,8 @@ class DataPart(BaseModel):
 
     Parameters
     ----------
-    path_to_run_folder: os.PathLike
-        The path_to_run_folder leads to a determine pipeline zone scanning 
+    path: os.PathLike
+        The path leads to a determine pipeline zone scanning 
         result data files. The folder should store: 
         file like "*_data.csv"; 
         file like "*_defects.csv";
@@ -67,7 +67,7 @@ class DataPart(BaseModel):
         by time item absolute max and divide amplitude items by amplitude
         item absolute max).
     """
-    path_to_run_folder: os.PathLike
+    path: os.PathLike
     xy: tuple[int,int] = (0,0)
     width: Optional[PositiveInt] = None
     height: Optional[PositiveInt] = None
@@ -75,9 +75,9 @@ class DataPart(BaseModel):
     unify_separatly: bool = True
 
     def _find_and_validata_data_file(self, rglob_pattern: str):
-        res = set(pathlib.Path(self.path_to_run_folder).rglob(rglob_pattern))
+        res = set(pathlib.Path(self.path).rglob(rglob_pattern))
         if len(res) != 1:
-            raise ValueError(f'The path_to_run_folder should store one "{rglob_pattern}" file, but found: {res}')
+            raise ValueError(f'The path should store one "{rglob_pattern}" file, but found: {res}')
         return res.pop()
     
     @computed_field
@@ -95,8 +95,8 @@ class DataPart(BaseModel):
     def pipe_path(self) -> os.PathLike:
         return self._find_and_validata_data_file('*_pipe.csv')
     
-    @field_validator('path_to_run_folder')
+    @field_validator('path')
     def is_path_dir(cls, value):
         if os.path.isdir(value):
             return value
-        raise ValueError('The path_to_run_folder should be path to a dir')
+        raise ValueError('The path should be path to a dir')
