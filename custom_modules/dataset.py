@@ -10,7 +10,10 @@ from pydantic import validate_call, PositiveInt
 from typing import Callable, Optional, Generator, Iterable
 import pathlib
 
-from custom_modules.data_worker import DataPart, match_ndarray_for_crops_dividing
+from custom_modules.data_worker import (
+    DataPart,
+    match_ndarray_for_crops_dividing,
+)
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
@@ -113,11 +116,14 @@ def get_data_df(path: os.PathLike, *args, **kvargs) -> tuple[pd.DataFrame, pd.Da
         base_df.iloc[row_min:row_max+1,detector_min:data_df.shape[1]] = fea_depth
         base_df.iloc[row_min:row_max+1,:detector_max+1] = fea_depth
     defects_df = base_df
-
+    
+    for i in range(data_df.shape[0]):
+        for j in range(data_df.shape[1]):
+            data_df.iloc[i,j] = np.array([*data_df.iloc[i,j], defects_df.iloc[i,j]])
+    
     logger.debug(f"""
-    Read detectors data shape: {data_df.shape}
-    Read defect data shape: {defects_df.shape}""")
-    return data_df, defects_df
+    Read detectors data shape: {data_df.shape}""")
+    return data_df
 
 
     
