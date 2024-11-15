@@ -1,4 +1,4 @@
-__all__ = ['get_dataset', 'get_crop_generator', 'get_data']
+__all__ = ['get_crop_generator', 'get_x_and_y_data_dfs']
 
 import logging
 import itertools
