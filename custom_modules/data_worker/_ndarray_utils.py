@@ -59,7 +59,8 @@ def match_ndarray_for_crops_dividing(arr: np.ndarray,
     """ 
     message = f"""
     The input ndarray shape: {arr.shape}"""
-
+    
+    arr = arr.copy()
     if not mode in ('crop','extend'):
         raise ValueError(f'The mode param should be one of the folowing: crop; extend. Got {mode=}') 
     if crop_size > arr.shape[0] or crop_size > arr.shape[1]:
@@ -127,6 +128,8 @@ def extend_ndarray_for_prediction(arr: np.ndarray, crop_size: PositiveInt, only_
     """
     message = f"""
     The input ndarray shape: {arr.shape}"""      
+
+    arr = arr.copy()
     if crop_size > arr.shape[0] or crop_size > arr.shape[1]:
         raise ValueError("Crop size should be bigger or equal " + 
                          f"than the arr less axis. The {arr.shape=}, but got the {crop_size=}")

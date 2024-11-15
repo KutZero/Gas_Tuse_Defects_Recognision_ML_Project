@@ -71,6 +71,7 @@ def normalize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with normalized some float values
     
     """
+    arr = arr.copy()
     if np.all(arr==0):
         logger.debug('\nThe input array consists only from zeros so it was not changed')
         return arr
@@ -109,6 +110,7 @@ def standardize_data(arr: np.ndarray) -> np.ndarray:
         The numpy array with standartized some float values
     
     """
+    arr = arr.copy()
     if np.all(arr==0):
         logger.debug('\nThe input array consists only from zeros so it was not changed')
         return arr
