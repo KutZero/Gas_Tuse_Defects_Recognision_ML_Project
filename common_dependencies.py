@@ -29,8 +29,7 @@ from matplotlib.patches import Rectangle
 from IPython.display import display
 from typing import NamedTuple
 
-import custom_modules.data_worker as dw
-from custom_modules import dataset
+import custom_modules as dw
 # create logger
 
 logger = logging.getLogger('main')
@@ -64,7 +63,7 @@ def get_dataset_gen(desc_part: DatasetPartDescription):
     crop_size = desc_part.sliding_crop.crop_size
     crop_step = desc_part.sliding_crop.crop_step
     
-    dataset.get_x_and_y_data_dfs(dw.DataPart(path_to_run_folder = desc_part.data_path,
+    dw.get_x_and_y_data_dfs(dw.DataPart(path_to_run_folder = desc_part.data_path,
                                              xy=(desc_part.file_data_crop.left, desc_part.file_data_crop.top),
                                              width = desc_part.file_data_crop.width,
                                              height = desc_part.file_data_crop.height,

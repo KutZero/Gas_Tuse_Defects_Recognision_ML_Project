@@ -1,13 +1,5 @@
-""" Модуль для всяческой обработки данных перед обучением модели.
+__all__ = ['get_dataset', 'get_crop_generator', 'get_data']
 
-Функции:
-
-Более подробнаую информацию можно получить так:
-
-1) В Jupyter Notebook: "?[Имя модуля].[Имя функции]";
-2) В общем виде: "print('[Имя модуля].[Имя функции].__doc__')";
-3) В общем виде: "help([Имя модуля].[Имя функции])".
-"""
 import logging
 import itertools
 import pandas as pd
@@ -16,8 +8,9 @@ import os
 import re
 from pydantic import validate_call, PositiveInt
 from typing import Callable, Optional, Generator, Iterable
+import pathlib
 
-import custom_modules.data_worker as dw
+from custom_modules.data_worker import DataPart
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
