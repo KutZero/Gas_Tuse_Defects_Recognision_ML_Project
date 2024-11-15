@@ -6,6 +6,7 @@ __all__ = ['calc_model_prediction_accuracy',
            'draw_zeros_quantity_in_data_df',
            'draw_defects_map_with_rectangles_owerlap',
            'roll_df',
+           'crop_df',
            'match_df_for_crops_dividing',
            'extend_df_for_prediction',
            'df_to_numpy',
@@ -30,7 +31,8 @@ from custom_modules.data_worker._dataframe_utils import(
     roll_df, 
     match_df_for_crops_dividing, 
     extend_df_for_prediction ,
-    df_to_numpy)
+    df_to_numpy,
+    crop_df)
 
 from custom_modules.data_worker._ndarray_utils import (
     match_ndarray_for_crops_dividing, 

@@ -1,5 +1,6 @@
 from custom_modules.data_worker._dataframe_utils import (
-    roll_df, 
+    roll_df,
+    crop_df,
     df_to_numpy,
     match_df_for_crops_dividing, 
     extend_df_for_prediction,
@@ -24,6 +25,65 @@ def test_input_df():
                       columns=['col1','col2','col3'],
                       index=[0,1,2,3])
     return df
+
+
+class Test_crop_df:
+    @pytest.mark.parametrize(
+    'input_df',
+    [
+    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
+                        [np.zeros((1)),np.zeros((1))]], 
+                  columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
+    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
+                        [np.zeros((1)),np.zeros((1))],
+                        [np.zeros((1)),np.zeros((1))]], 
+                  index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
+    ]
+    )
+    def test_uncorrect_input_df_has_multitindex(self, input_df):
+        with pytest.raises(ValueError):
+            crop_df(input_df)
+
+
+    @pytest.mark.parametrize(
+    'xy, width, height, res',
+    [
+         ((0,0), 2, 2, pd.DataFrame(data=[[1,2], [4,5]], columns=['col1', 'col2'], index=[0, 1])),
+         ((0,1), 2, 2, pd.DataFrame(data=[[4,5], [7,8]], columns=['col1', 'col2'], index=[1, 2])),
+         ((1,1), 2, 3, pd.DataFrame(data=[[5,6], [8,9], [11,12]], columns=['col2', 'col3'], index=[1, 2, 3])),
+    ]
+    )
+    def test_correct_input(self, test_input_df, xy, width, height, res):
+        assert crop_df(test_input_df, xy, width, height).equals(res)
+
+    @pytest.mark.parametrize(
+    'xy, width, height, exception',
+    [
+         ((-1,0), 2, 2, ValidationError),
+         ((0,-1), 2, 2, ValidationError),
+         ((0,1), -2, 2, ValidationError),
+         ((1,1), 2, -3, ValidationError),
+         ((-1,-1), 2, 3, ValidationError),
+         ((10,1), 2, 3, ValueError),
+         ((1,10), 2, 3, ValueError),
+         ((10,10), 2, 3, ValueError)
+    ]
+    )
+    def test_uncorrect_value_input(self, test_input_df, xy, width, height, exception):
+        with pytest.raises(exception):
+            crop_df(test_input_df, xy, width, height)
+
+    @pytest.mark.parametrize(
+    'xy, width, height',
+    [
+         ('(-1,0)', 2, 2),
+         ((0,1), '2', 2),
+         ((0,1), 2, '2'),
+    ]
+    )
+    def test_uncorrect_type_input(self, xy, width, height):
+        with pytest.raises(ValidationError):
+            crop_df(test_input_df, xy, width, height)
 
 
 class Test__check_df_cell_is_correct_numpy_array:

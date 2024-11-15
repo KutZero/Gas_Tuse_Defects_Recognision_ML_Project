@@ -9,8 +9,9 @@ import logging
 import pandas as pd
 import numpy as np
 
-from pydantic import validate_call, PositiveInt
+from pydantic import validate_call, PositiveInt, NonNegativeInt 
 from functools import wraps
+from typing import Callable, Optional, Generator, Iterable
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
@@ -24,7 +25,71 @@ def check_is_df_has_multiindex_decorator(func):
         return func(df,*args,**kvargs)
     return wrapper
 
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+@check_is_df_has_multiindex_decorator
+def crop_df(df: pd.DataFrame, 
+            xy: tuple[NonNegativeInt , NonNegativeInt ] = (0,0),
+            width: Optional[PositiveInt] = None, 
+            height: Optional[PositiveInt] = None) -> pd.DataFrame:
+    """
+    The func to crop df
+
+        Orig df
+        +-------------------columns count-------------------+
+        |                                                   |
+        |                Cropped df:                        |
+        |                (x,y)------width------+            |
+        |                 |                    |            |
+    rows count            |                  height         |
+        |                 |                    |            |
+        |                 ---------------------+            |
+        |                                                   |
+        +---------------------------------------------------+
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        The df to be cropped
+    xy: tuple[pydantic.PositiveInt, pydantic.PositiveInt], default = (0,0)
+        Anchor point.
+    width: pydantic.PositiveInt, optional
+        The width of crop df. 
+    height: pydantic.PositiveInt, optional
+        The height of crop df. 
+        
+    Returns
+    -------
+    out : pandas.DataFrame
+        The cropped df
+        
+    """
+    if xy[1] > df.shape[0]:
+        raise ValueError(f"The y should be less or equal to df's rows count. Got y={xy[1]}. df.shape={df.shape}")
+    if xy[0] > df.shape[1]:
+        raise ValueError(f"The x should be less or equal to df's rows count. Got x={xy[0]}. df.shape={df.shape}")
+    if xy == (0,0) and height is None and width is None:
+        return df
+
+    in_shape = df.shape
+
+    end_row = None if height is None else xy[1]+height
+    end_col = None if width is None else xy[0]+width
     
+    df = df.iloc[xy[1]:end_row, xy[0]:end_col]
+
+    if end_row > in_shape[0]:
+        logger.warning(f'The demanded crop height is bigger that the df. Got params: xy={xy}, width={width},' + 
+                       f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
+    if end_col > in_shape[1]:
+        logger.warning(f'The demanded crop width is bigger that the df. Got params: xy={xy}, width={width},' + 
+                       f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
+
+    logger.debug(f"""
+    Cropped with (xy={xy},width={width},height={height}) detectors data shape: {df.shape}""")
+    
+    return df
+
 @validate_call(config=dict(arbitrary_types_allowed=True))
 @check_is_df_has_multiindex_decorator
 def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
