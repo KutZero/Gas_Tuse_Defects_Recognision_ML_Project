@@ -120,14 +120,16 @@ def get_data_df(path: os.PathLike, *args, **kvargs) -> tuple[pd.DataFrame, pd.Da
     for i in range(data_df.shape[0]):
         for j in range(data_df.shape[1]):
             data_df.iloc[i,j] = np.array([*data_df.iloc[i,j], defects_df.iloc[i,j]])
+
+    data_df.index = pd.MultiIndex.from_product([[pathlib.Path(path).name,], 
+                                                data_df.index.values.astype('int')], names=['File','ScanNum'])
+    data_df.columns = data_df.columns.map(lambda x: x.split('_')[-1]).astype('int')
+    data_df.columns.name = 'DetectorNum'
     
     logger.debug(f"""
     Read detectors data shape: {data_df.shape}""")
     return data_df
-
-
     
-
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def _get_df_from_defects_file(path_to_defects_file: os.PathLike) -> pd.DataFrame:

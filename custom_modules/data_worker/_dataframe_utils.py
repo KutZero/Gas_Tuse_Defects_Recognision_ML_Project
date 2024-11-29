@@ -17,17 +17,7 @@ from typing import Callable, Optional, Generator, Iterable
 logger = logging.getLogger('main.'+__name__)
 
 
-def check_is_df_has_multiindex_decorator(func):
-    @wraps(func)
-    def wrapper(df,*args,**kvargs):
-        if isinstance(df.index, pd.MultiIndex) or isinstance(df.columns, pd.MultiIndex):
-            raise ValueError(f'The df should not have MultiIndex')
-        return func(df,*args,**kvargs)
-    return wrapper
-
-
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@check_is_df_has_multiindex_decorator
 def crop_df(df: pd.DataFrame, 
             xy: tuple[NonNegativeInt , NonNegativeInt ] = (0,0),
             width: Optional[PositiveInt] = None, 
@@ -91,7 +81,6 @@ def crop_df(df: pd.DataFrame,
     return df
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@check_is_df_has_multiindex_decorator
 def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     """
     Roll a dataframe like numpy.roll method.
@@ -144,7 +133,6 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@check_is_df_has_multiindex_decorator
 def match_df_for_crops_dividing(df: pd.DataFrame, 
                                 crop_size: PositiveInt, 
                                 crop_step: PositiveInt,
@@ -207,7 +195,6 @@ def match_df_for_crops_dividing(df: pd.DataFrame,
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@check_is_df_has_multiindex_decorator
 def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_horizontal: bool=False) -> pd.DataFrame:
     """
     Extend dataframe for increasing network model prediction or
@@ -266,7 +253,6 @@ def extend_df_for_prediction(df: pd.DataFrame, crop_size: PositiveInt, only_hori
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@check_is_df_has_multiindex_decorator
 def df_to_numpy(df: pd.DataFrame) -> np.ndarray:
     """
     Reshape df with numpy.array in each cell of 64 items

@@ -29,23 +29,6 @@ def test_input_df():
 
 class Test_crop_df:
     @pytest.mark.parametrize(
-    'input_df',
-    [
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
-    ]
-    )
-    def test_uncorrect_input_df_has_multitindex(self, input_df):
-        with pytest.raises(ValueError):
-            crop_df(input_df)
-
-
-    @pytest.mark.parametrize(
     'xy, width, height, res',
     [
          ((0,0), 2, 2, pd.DataFrame(data=[[1,2], [4,5]], columns=['col1', 'col2'], index=[0, 1])),
@@ -91,21 +74,7 @@ class Test__check_df_cell_is_correct_numpy_array:
 
 
 class Test_roll_df:
-    @pytest.mark.parametrize(
-    'input_df',
-    [
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
-    ]
-    )
-    def test_uncorrect_input_df_has_multitindex(self, input_df):
-        with pytest.raises(ValueError):
-            roll_df(input_df)
+    pass
 
 
 class Test_df_to_numpy:
@@ -132,23 +101,6 @@ class Test_df_to_numpy:
     )
     def test_uncorrect_input_cell_value_is_not_numpy_array(self, input_df):
         with pytest.raises(TypeError):
-            df_to_numpy(input_df)
-
-            
-    @pytest.mark.parametrize(
-    'input_df',
-    [
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
-    ]
-    )
-    def test_uncorrect_input_df_has_multitindex(self, input_df):
-        with pytest.raises(ValueError):
             df_to_numpy(input_df)
     
 
@@ -246,23 +198,6 @@ class Test_match_df_for_crops_dividing:
 
     
     @pytest.mark.parametrize(
-    'input_df',
-    [
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
-    (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))],
-                        [np.zeros((1)),np.zeros((1))]], 
-                  index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
-    ]
-    )
-    def test_uncorrect_input_df_has_multitindex(self, input_df):
-        with pytest.raises(ValueError):
-            match_df_for_crops_dividing(input_df,1,1)
-
-    
-    @pytest.mark.parametrize(
     'crop_size, crop_step, mode',
     [
         # crop_size bigger than rows quantity 
@@ -357,23 +292,6 @@ class Test_extend_df_for_prediction:
     )
     def test_correct_input_extend_principle(self, test_input_df, crop_size, only_horizontal, res):
         assert extend_df_for_prediction(test_input_df, crop_size=crop_size, only_horizontal=only_horizontal).equals(res)
-
-    
-    @pytest.mark.parametrize(
-    'input_df',
-    [
-        (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                            [np.zeros((1)),np.zeros((1))]], 
-                      columns=pd.MultiIndex.from_product([[1], ['red','blue']], names=['number', 'color']))),
-        (pd.DataFrame(data=[[np.zeros((1)),np.zeros((1))],
-                            [np.zeros((1)),np.zeros((1))],
-                            [np.zeros((1)),np.zeros((1))]], 
-                      index=pd.MultiIndex.from_product([[1], ['red','blue','yellow']], names=['number', 'color'])))
-    ]
-    )
-    def test_uncorrect_input_df_has_multitindex(self, input_df):
-        with pytest.raises(ValueError):
-            extend_df_for_prediction(input_df,1)
 
     
     @pytest.mark.parametrize(
