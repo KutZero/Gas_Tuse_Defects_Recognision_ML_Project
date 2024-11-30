@@ -86,14 +86,22 @@ def get_data_df(path: os.PathLike, *args, **kvargs) -> tuple[pd.DataFrame, pd.Da
 
     Parameters
     ----------
-    data_part_desc : DataPart
-        The describtion of data to read. For more info 
-        see DataPart docs
+    path : os.PathLike
+        The path to one scanning result folder or
+        to folder with all scanning results folders.
 
     Returns
     -------
     data_df : pandas.DataFrame
     """
+    run_names = next(os.walk(path))[1]
+    if run_names:
+        runs_list = []
+        for run_name in run_names:
+            runs_list.append(get_data_df(os.path.join(path, run_name), 
+                                         *args, **kvargs))
+        return pd.concat(runs_list, axis=0)
+        
     data_df = _get_df_from_data_file(next(pathlib.Path(path).rglob('*_data.csv')),*args, **kvargs)
     defects_df = _get_df_from_defects_file(next(pathlib.Path(path).rglob('*_defects.csv')))
     
