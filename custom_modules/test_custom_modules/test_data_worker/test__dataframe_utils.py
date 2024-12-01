@@ -34,11 +34,23 @@ class Test_crop_df:
          ((0,0), 2, 2, pd.DataFrame(data=[[1,2], [4,5]], columns=['col1', 'col2'], index=[0, 1])),
          ((0,1), 2, 2, pd.DataFrame(data=[[4,5], [7,8]], columns=['col1', 'col2'], index=[1, 2])),
          ((1,1), 2, 3, pd.DataFrame(data=[[5,6], [8,9], [11,12]], columns=['col2', 'col3'], index=[1, 2, 3])),
+        
     ]
     )
     def test_correct_input(self, test_input_df, xy, width, height, res):
         assert crop_df(test_input_df, xy, width, height).equals(res)
 
+    def test_correct_input_df_with_object_data_type(self):
+        inp = pd.DataFrame(data=[[np.array([1]),np.array([2]),np.array([3])],
+                                 [np.array([4]),np.array([5]),np.array([6])],
+                                 [np.array([7]),np.array([8]),np.array([9])],
+                                 [np.array([10]),np.array([11]),np.array([12])]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])
+        res = pd.DataFrame(data=[[np.array([4]),np.array([5])], 
+                                 [np.array([7]),np.array([8])]], columns=['col1', 'col2'], index=[1, 2])
+        assert crop_df(inp, (0,1), 2, 2).equals(res)
+    
     @pytest.mark.parametrize(
     'xy, width, height, exception',
     [
@@ -74,7 +86,16 @@ class Test__check_df_cell_is_correct_numpy_array:
 
 
 class Test_roll_df:
-    pass
+    def test_correct_input_df_with_object_data_type(self):
+        inp = pd.DataFrame(data=[[np.array([5, 1]),np.array([4, 2])],
+                                 [np.array([8, 1]),np.array([7, 2])]], 
+                           columns=['col1','col2'],
+                           index=[0,1], dtype='object')
+        res = pd.DataFrame(data=[[np.array([4, 2]),np.array([5, 1])], 
+                                 [np.array([7, 2]),np.array([8, 1])]], 
+                           columns=['col2', 'col1'], 
+                           index=[0, 1], dtype='object')
+        assert roll_df(inp, 1, 1).equals(res)
 
 
 class Test_df_to_numpy:
@@ -196,6 +217,17 @@ class Test_match_df_for_crops_dividing:
     def test_correct_input_extend_principle(self, test_input_df, crop_size, crop_step, mode, res):
         assert match_df_for_crops_dividing(test_input_df, crop_size=crop_size, crop_step=crop_step, mode=mode).equals(res)
 
+    def test_correct_input_df_with_object_data_type(self):
+        inp = pd.DataFrame(data=[[np.array([1]),np.array([2]),np.array([3])],
+                                 [np.array([4]),np.array([5]),np.array([6])],
+                                 [np.array([7]),np.array([8]),np.array([9])],
+                                 [np.array([10]),np.array([11]),np.array([12])]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])
+        res = pd.DataFrame(data=[[np.array([1]),np.array([2])], 
+                                 [np.array([4]),np.array([5])]], columns=['col1', 'col2'], index=[0, 1])
+        assert match_df_for_crops_dividing(inp, 2, 3, 'crop').equals(res)
+    
     
     @pytest.mark.parametrize(
     'crop_size, crop_step, mode',
@@ -293,6 +325,21 @@ class Test_extend_df_for_prediction:
     def test_correct_input_extend_principle(self, test_input_df, crop_size, only_horizontal, res):
         assert extend_df_for_prediction(test_input_df, crop_size=crop_size, only_horizontal=only_horizontal).equals(res)
 
+
+    def test_correct_input_df_with_object_data_type(self):
+        inp = pd.DataFrame(data=[[np.array([1]),np.array([2]),np.array([3])],
+                                 [np.array([4]),np.array([5]),np.array([6])],
+                                 [np.array([7]),np.array([8]),np.array([9])],
+                                 [np.array([10]),np.array([11]),np.array([12])]], 
+                      columns=['col1','col2','col3'],
+                      index=[0,1,2,3])
+        res = pd.DataFrame(data=[[ np.array([3]), np.array([1]), np.array([2]), np.array([3]), np.array([1])],
+                                 [ np.array([6]), np.array([4]), np.array([5]), np.array([6]), np.array([4])],
+                                 [ np.array([9]), np.array([7]), np.array([8]), np.array([9]), np.array([7])],
+                                 [ np.array([12]), np.array([10]), np.array([11]), np.array([12]), np.array([10])]], 
+                           columns=['col3','col1','col2','col3','col1'], 
+                           index=[0, 1, 2, 3])
+        assert extend_df_for_prediction(inp, 2, True).equals(res)
     
     @pytest.mark.parametrize(
     'crop_size',
