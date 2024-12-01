@@ -21,12 +21,21 @@ from shapely.geometry import Polygon as shPolygon
 from shapely.ops import unary_union
 from typing_extensions import Annotated
 from pydantic import validate_call, PositiveInt, AfterValidator, Field
+from functools import wraps
 
 PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float(x))]
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
 
+
+def is_df_has_valid_dtypes_decorator(func):
+    @wraps(func)
+    def wrapper(df,*args,**kvargs):
+        if not df.dtypes.map(lambda x: x in ['int','float']).values.all():
+            raise ValueError('The df should store only int and float values in every cell')
+        return func(df,*args,**kvargs)
+    return wrapper
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def draw_zeros_quantity_in_data_df(data_df: pd.DataFrame, *, 
@@ -141,13 +150,14 @@ def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
+@is_df_has_valid_dtypes_decorator
 def _build_defects_map(df: pd.DataFrame, 
                         /,
-                        title: str = 'Развернутая карта дефектов',
+                        title: str = 'auto',
                         xlabel: str = 'Номер датчика', 
-                        ylabel: str = 'Номер измерения',
+                        ylabel: str = 'Номер сканирования',
                         *,
-                        x_ticks_step: PositiveInt = 50,
+                        x_ticks_step: PositiveInt = 20,
                         y_ticks_step: PositiveInt = 20,
                         plt_style_context = 'default',
                         pcolormesh_cmap = 'inferno',
@@ -163,7 +173,8 @@ def _build_defects_map(df: pd.DataFrame,
         The dataframe of size detectors num * rows
         with defect depth values in cells.
     title :str, optional
-        The titile of the defects map.
+        The titile of the defects map. If 'auto' the
+        title will be generated from dataframe
     xlabel : str, optional
         The x label of the defects map.
     ylabel : str, optional
@@ -198,61 +209,109 @@ def _build_defects_map(df: pd.DataFrame,
         
     with plt.style.context(plt_style_context):
         fig, ax = plt.subplots()
-    
-        fig.set_figwidth(32)
-        fig.set_figheight(8)
+
+        width = df.shape[1]//10
+        
+        fig.set_figwidth(width) # 32
+        fig.set_figheight(df.shape[0]//10)
         fig.patch.set_alpha(0.0)
-    
+
+        width = 30
+        
         ax.invert_yaxis()
         ax.xaxis.tick_top()
         ax.xaxis.set_label_position('top')
-        ax.set_title(title, fontsize=25)
-        ax.set_xlabel(xlabel, fontsize=20)
-        ax.set_ylabel(ylabel, fontsize=20)
-        ax.tick_params(axis='both', labelsize = 20)
-        
-        # get columns and indexes list of int type
-        cols = [re.search('[0-9]+', col)[0] for col in df.columns.to_numpy()]
-        cols = np.array(cols).astype(int)
-        indexes = df.index.to_numpy().astype(int)
-        
-        xlocs, xlabel_paddings, xlabels = _calc_labels_and_locs(cols, x_ticks_step)
-        ylocs, ylabel_paddings, ylabels = _calc_labels_and_locs(indexes, y_ticks_step)
+        ax.set_title(f"Развернутая карта девектов для файлов: {set(df.index.get_level_values('File').values)}" 
+                     if title == 'auto' else title, fontsize=width)
+        ax.set_xlabel(xlabel, fontsize=width)
+        ax.set_ylabel(ylabel, fontsize=width, labelpad=90)
+        ax.tick_params(axis='both', labelsize = width)
 
         if polygonize_data:
             df = _approx_df(df, bins)
-        
-        mapp = ax.pcolormesh(df, cmap=pcolormesh_cmap)
 
+        orig_x_ticks = df.columns.values
+        orig_y_ticks = df.index.get_level_values('ScanNum').values
+
+        # create base ticks (detectors and scans numbers)
+        ax.set_xticks(*_get_ticks(orig_x_ticks, x_ticks_step))
+        ax.set_yticks(*_get_ticks(orig_y_ticks, y_ticks_step))
+
+        # create second level ticks (edges of mirror of padding results)
+        sec_x = ax.secondary_xaxis(location=1)
+        sec_x.set_xticks(*_get_extreme_ticks(orig_x_ticks))
+        sec_x.tick_params('x', length=60, width=4, color='blue')
+
+        sec_y = ax.secondary_yaxis(location=0)
+        sec_y.set_yticks(*_get_extreme_ticks(orig_y_ticks))
+        sec_y.tick_params('y', length=60, width=4, color='blue')
+
+        # create third level ticks for every run
+        # create edges lines
+        third_y_edges = _get_class_edges(df.index)
+        third_y = ax.secondary_yaxis(location=0)
+        third_y.set_yticks(third_y_edges[0], [])
+        third_y.tick_params('y', length=120, width=4)
+
+        # create class names
+        third_locs = [(third_y_edges[0][i]-third_y_edges[0][i-1])//2+third_y_edges[0][i-1] 
+                      for i in range(1,len(third_y_edges[0]))]
+        third_labels = map(lambda x: f'<-- Файл: {x} -->', third_y_edges[1][:-1])
+        third_y = ax.secondary_yaxis(location=0)
+        third_y.set_yticks(third_locs, third_labels)
+        third_y.tick_params('y', length=0, width=0, labelsize=width, labelrotation=90, pad=90)
+        
         if polygonize_data > 1:
            fig, ax = _polygonize(df, fig, ax, polygonize_data)
         
         if add_color_bar:
-            cbar = fig.colorbar(mapp)
-            cbar.ax.tick_params(labelsize=20)
-        
-        ax.set_xticks(xlocs, xlabels)
-        ax.set_yticks(ylocs, ylabels)
+            mapp = ax.pcolormesh(df, cmap=pcolormesh_cmap)
+            cbar = fig.colorbar(mapp, shrink=0.78, pad=0.01, ax=ax)
+            cbar.ax.tick_params(labelsize=width)
 
-        ax.set_xticklabels(xlabels)
-        ax.set_yticklabels(ylabels)
-        
-        xtext_labels = ax.get_xticklabels()
-        ytext_labels = ax.get_yticklabels()
-
-        for i in range(len(xtext_labels)):
-            or_x, or_y = xtext_labels[i].get_position()
-            xtext_labels[i].set(y=or_y+xlabel_paddings[i]*0.045)
-            
-        for i in range(len(ytext_labels)):
-            or_x, or_y = ytext_labels[i].get_position()
-            ytext_labels[i].set(x=or_x-ylabel_paddings[i]*0.05)
-
-        ax.set_xticklabels(xtext_labels) 
-        ax.set_yticklabels(ytext_labels) 
         ax.set_aspect('equal')
-                
+        plt.tight_layout()
+        
     return fig, ax
+
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _get_class_edges(index: pd.MultiIndex) -> tuple[list[int],list[str]]:
+    """Calc locs of class edges at y axis"""
+    new_locs = []
+    new_labels = []
+    cur_class = ''
+    for i in range(index.size-1):
+        if cur_class != index[i][0]:
+            new_locs.append(i)
+            new_labels.append(index[i][0])
+            cur_class = index[i][0]
+    new_locs.append(index.size)
+    new_labels.append(index[-1][0])
+    return new_locs, new_labels
+
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _get_extreme_ticks(ticks: np.ndarray) -> tuple[list[int],list]:
+    """Calc extreme points locs in array of ticks"""
+    new_locs = []
+    for i in range(1, ticks.size-1):
+        if (ticks[i-1] < ticks[i] > ticks[i+1]) or (ticks[i-1] > ticks[i] < ticks[i+1]):
+            new_locs.append(i)
+    return new_locs, []
+
+    
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def _get_ticks(ticks: np.ndarray, step: PositiveInt) -> tuple[list[int],list[str]]:
+    """Filter ticks by applying the step. The first and last tick are used always"""
+    new_locs = []
+    new_labels = []
+    for i in range(0, ticks.size-1, step):
+        new_locs.append(i)
+        new_labels.append(ticks[i])
+    new_locs.append(len(ticks)-1)
+    new_labels.append(ticks[-1])
+    return new_locs, new_labels
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
@@ -310,37 +369,3 @@ def _polygonize(df: pd.DataFrame, fig, ax, polygonize_data):
                             ha='center', va='center')
                 ax.add_patch(mplPolygon(polygon.exterior.coords, fc=(0,0,0,0), ec='white'))
     return fig, ax
-    
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def _add_index_fillers(arr: np.ndarray, step: int=1, i: int=0):
-    """Add fillers between sorted (0 to max) numpy array of int or float"""
-    if i > arr.shape[0]-2:
-        return arr
-    if arr[i+1] - arr[i] >= 1.5 * step:
-        arr = np.insert(arr,i+1,arr[i]+step)
-    return _add_index_fillers(arr, step, i+1)
-
-    
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def _cals_labels_paddings(locs: np.ndarray, step: int=1):
-    """Calc labels paddings for avoid labels overlapping"""
-    label_paddings = np.zeros(locs.shape)
-    for i in range(locs.shape[0]-1):
-        if locs[i+1] - locs[i] < step / 2:
-            label_paddings[i] = 1
-    return label_paddings
-
-
-@validate_call(config=dict(arbitrary_types_allowed=True))
-def _calc_labels_and_locs(arr: np.ndarray, step: int=1):
-    """Calc locs and labels for matplotlib graph"""
-    locs = np.sort(np.unique(np.concatenate(
-                    [np.where((arr == min(arr)) | (arr == max(arr)))[0],
-                           [0, arr.shape[0]-1]], axis=0)))
-
-    locs = _add_index_fillers(locs, step)
-    labels = arr[locs]
-    # labels paddings for avoid labels overlapping
-    label_paddings = _cals_labels_paddings(locs, step)
-    return locs, label_paddings, labels

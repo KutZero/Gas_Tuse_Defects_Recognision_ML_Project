@@ -1,10 +1,14 @@
 from custom_modules.data_worker._draw_defects_map import (
-    draw_zeros_quantity_in_data_df, draw_defects_map,
+    draw_zeros_quantity_in_data_df, 
+    draw_defects_map,
     draw_defects_map_with_reference_owerlap,
     draw_defects_map_with_rectangles_owerlap,
-    _build_defects_map, _approx_df, _polygonize,
-    _add_index_fillers, _cals_labels_paddings, 
-    _calc_labels_and_locs)
+    _build_defects_map, 
+    _approx_df, 
+    _polygonize,
+    _get_class_edges,
+    _get_extreme_ticks,
+    _get_ticks)
 
 import pytest
 import pandas as pd
@@ -43,16 +47,15 @@ class Test__approx_df:
 class Test__polygonize:
     pass
 
-
-class Test__add_index_fillers:
+class Test_get_class_edges:
     pass
 
-
-class Test__cals_labels_paddings:
+    
+class Test_get_extreme_ticks:
     pass
 
-
-class Test__calc_labels_and_locs:
+    
+class Test_get_ticks:
     pass
 
 
