@@ -19,7 +19,7 @@ logger = logging.getLogger('main.'+__name__)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def crop_df(df: pd.DataFrame, 
-            xy: tuple[NonNegativeInt , NonNegativeInt ] = (0,0),
+            xy: tuple[int, int] = (0,0),
             width: Optional[PositiveInt] = None, 
             height: Optional[PositiveInt] = None) -> pd.DataFrame:
     """
@@ -68,12 +68,14 @@ def crop_df(df: pd.DataFrame,
     
     df = df.iloc[xy[1]:end_row, xy[0]:end_col]
 
-    if end_row > in_shape[0]:
-        logger.warning(f'The demanded crop height is bigger that the df. Got params: xy={xy}, width={width},' + 
-                       f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
-    if end_col > in_shape[1]:
-        logger.warning(f'The demanded crop width is bigger that the df. Got params: xy={xy}, width={width},' + 
-                       f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
+    if not end_row is None:
+        if end_row > in_shape[0]:
+            logger.warning(f'The demanded crop height is bigger that the df. Got params: xy={xy}, width={width},' + 
+                           f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
+    if not end_col is None:
+        if end_col > in_shape[1]:
+            logger.warning(f'The demanded crop width is bigger that the df. Got params: xy={xy}, width={width},' + 
+                           f' height={height}. But df has shape={in_shape}. Result crop shape={df.shape}')
 
     logger.debug(f"""
     Cropped with (xy={xy},width={width},height={height}) detectors data shape: {df.shape}""")

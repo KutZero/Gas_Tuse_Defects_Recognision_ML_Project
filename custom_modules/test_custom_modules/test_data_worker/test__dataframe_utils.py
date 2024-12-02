@@ -54,11 +54,8 @@ class Test_crop_df:
     @pytest.mark.parametrize(
     'xy, width, height, exception',
     [
-         ((-1,0), 2, 2, ValidationError),
-         ((0,-1), 2, 2, ValidationError),
          ((0,1), -2, 2, ValidationError),
          ((1,1), 2, -3, ValidationError),
-         ((-1,-1), 2, 3, ValidationError),
          ((10,1), 2, 3, ValueError),
          ((1,10), 2, 3, ValueError),
          ((10,10), 2, 3, ValueError)
