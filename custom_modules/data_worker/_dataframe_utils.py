@@ -118,20 +118,19 @@ def roll_df(df: pd.DataFrame, shift: int = 0, axis: int = 0) -> pd.DataFrame:
     
     if shift == 0:
         return df
-    
-    df_values = df.to_numpy()
-    df_indexes = df.index.to_numpy()
-    df_columns = df.columns.to_numpy()
 
-    df_values = np.roll(df_values, shift, axis)
-    
     if axis == 0:
-        df_indexes = np.roll(df.index.to_numpy(), shift)
+        if shift > 0:
+            return pd.concat([df.iloc[shift:,:], 
+                              df.iloc[:shift,:]], axis=0)
+        return pd.concat([df.iloc[:shift,:], 
+                          df.iloc[shift:,:]], axis=0)
     if axis == 1:
-        df_columns = np.roll(df.columns.to_numpy(), shift)
-
-    return pd.DataFrame(data=df_values, index=df_indexes, 
-                        columns=df_columns)
+        if shift > 0:
+            return pd.concat([df.iloc[:,shift:], 
+                              df.iloc[:,:shift]], axis=1)
+        return pd.concat([df.iloc[:,:shift], 
+                          df.iloc[:,shift:]], axis=1)
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
