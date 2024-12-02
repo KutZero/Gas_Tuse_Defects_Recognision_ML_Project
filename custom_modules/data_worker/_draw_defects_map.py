@@ -241,6 +241,8 @@ def _build_defects_map(df: pd.DataFrame,
         orig_x_ticks = df.columns.values
         orig_y_ticks = df.index.get_level_values('ScanNum').values
 
+        mapp = ax.pcolormesh(df, cmap=pcolormesh_cmap)
+        
         # create base ticks (detectors and scans numbers)
         ax.set_xticks(*_get_ticks(orig_x_ticks, x_ticks_step))
         ax.set_yticks(*_get_ticks(orig_y_ticks, y_ticks_step))
@@ -269,7 +271,6 @@ def _build_defects_map(df: pd.DataFrame,
            fig, ax = _polygonize(df, fig, ax, polygonize_data)
         
         if add_color_bar:
-            mapp = ax.pcolormesh(df, cmap=pcolormesh_cmap)
             cbar = fig.colorbar(mapp, shrink=0.78, pad=0.01, ax=ax)
             cbar.ax.tick_params(labelsize=width)
 
