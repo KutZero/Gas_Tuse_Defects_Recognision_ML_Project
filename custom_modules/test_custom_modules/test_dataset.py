@@ -1,4 +1,6 @@
 from custom_modules.dataset import (
+    cast_df_to_2d,
+    cast_df_to_3d,
     get_crop_generator,
     get_data_df,
     _get_df_from_defects_file,
@@ -34,7 +36,15 @@ def test_df():
                        'col3': [9,10,11,12]})
     return df
     
-            
+
+class Test_cast_df_to_2d:
+    pass
+
+    
+class Test_cast_df_to_3d:
+    pass
+
+    
 class get_data_df:
     pass
 

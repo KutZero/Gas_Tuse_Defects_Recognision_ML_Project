@@ -1,4 +1,4 @@
-__all__ = ['get_crop_generator', 'get_data_df']
+__all__ = ['get_crop_generator', 'get_data_df', 'cast_df_to_2d', 'cast_df_to_3d']
 
 import logging
 import itertools
@@ -17,6 +17,42 @@ from custom_modules.data_worker import (
 
 # create logger
 logger = logging.getLogger('main.'+__name__)
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def cast_df_to_2d(df: pd.DataFrame) -> pd.DataFrame:
+    if not list(df.index.names) == ['File', 'ScanNum']:
+        raise ValueError(f'The df should have index with levels: "File", "ScanNum", but got: {df.index.names=}')
+    if not list(df.columns.names) == ['DetectorNum']:
+        raise ValueError(f'The df should have columns with levels: "DetectorNum", but got: {df.columns.names=}')
+    if df.columns.values.dtype.name != 'int64':
+        raise ValueError(f'The df should have columns with levels: "DetectorNum" and dtype "int64", but got: {df.columns.values.dtype=}')
+    if df.index.get_level_values('ScanNum').dtype.name != 'int64':
+        raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
+        
+    df = df.copy()
+    df = df.stack(0, future_stack=True)
+    tuples = [('Time', i) for i in range(32)] + [('Amplitude', i) for i in range(32)] + [('DefectDepth', 0)]
+    df = pd.DataFrame(data=np.stack(df.to_list()), index=df.index, 
+                      columns=pd.MultiIndex.from_tuples(tuples, names=['DataPart','Id']))
+    return df
+
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def cast_df_to_3d(df: pd.DataFrame) -> pd.DataFrame:
+    if not list(df.index.names) == ['File', 'ScanNum', 'DetectorNum']:
+        raise ValueError(f'The df should have index with levels: "File", "ScanNum", "DetectorNum", but got: {df.index.names=}')
+    if not list(df.columns.names) == ['DataPart', 'Id']:
+        raise ValueError(f'The df should have columns with levels: "DataPart", "Id", but got: {df.columns.names=}')
+    if df.index.get_level_values('ScanNum').dtype.name != 'int64':
+        raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
+    if df.index.get_level_values('DetectorNum').dtype.name != 'int64':
+        raise ValueError(f"The df's index level 'DetectorNum' should have dtype 'int64', but got: {df.index.get_level_values('DetectorNum').dtype=}")
+    if df.columns.get_level_values('Id').dtype.name != 'int64':
+        raise ValueError(f"The df's columns level 'Id' should have dtype 'int64', but got: {df.index.get_level_values('Id').dtype=}")
+        
+    df = df.copy()
+    df = pd.Series(data=map(lambda x: np.array(x), df.to_numpy().tolist()), index=df.index)
+    df = df.unstack('DetectorNum')
+    return df
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
