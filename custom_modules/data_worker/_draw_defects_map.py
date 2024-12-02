@@ -248,17 +248,13 @@ def _build_defects_map(df: pd.DataFrame,
 
         # create third level ticks for every run
         # create edges lines
-        third_y_edges = _get_class_edges(df.index)
+        third_y_locs, third_y_labels = _get_class_edges(df.index)
         third_y = ax.secondary_yaxis(location=0)
-        third_y.set_yticks(third_y_edges[0], [])
+        third_y.set_yticks(third_y_locs, [])
         third_y.tick_params('y', length=120, width=4)
-
-        # create class names
-        third_locs = [(third_y_edges[0][i]-third_y_edges[0][i-1])//2+third_y_edges[0][i-1] 
-                      for i in range(1,len(third_y_edges[0]))]
-        third_labels = map(lambda x: f'<-- Файл: {x} -->', third_y_edges[1][:-1])
+            
         third_y = ax.secondary_yaxis(location=0)
-        third_y.set_yticks(third_locs, third_labels)
+        third_y.set_yticks(third_y_locs[:-1], map(lambda x: f'<-{x}-> ', third_y_labels[:-1]))
         third_y.tick_params('y', length=0, width=0, labelsize=width, labelrotation=90, pad=90)
         
         if polygonize_data > 1:
