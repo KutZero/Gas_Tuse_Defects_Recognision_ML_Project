@@ -1,4 +1,5 @@
 # create logger
+import logging
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
