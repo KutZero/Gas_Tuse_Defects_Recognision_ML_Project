@@ -29,11 +29,19 @@ PercentFloat = Annotated[float, Field(ge=0,le=1), AfterValidator(lambda x: float
 logger = logging.getLogger('main.'+__name__)
 
 
-def is_df_has_valid_dtypes_decorator(func):
+def is_df_valid_decorator(func):
     @wraps(func)
     def wrapper(df,*args,**kvargs):
         if not df.dtypes.map(lambda x: x in ['int','float']).values.all():
             raise ValueError('The df should store only int and float values in every cell')
+        if not list(df.index.names) == ['File', 'ScanNum']:
+            raise ValueError(f'The df should have index with levels: "File", "ScanNum", but got: {df.index.names=}')
+        if not list(df.columns.names) == ['DetectorNum']:
+            raise ValueError(f'The df should have columns with levels: "DetectorNum", but got: {df.columns.names=}')
+        if df.columns.values.dtype.name != 'int64':
+            raise ValueError(f'The df should have columns with levels: "DetectorNum" and dtype "int64", but got: {df.columns.values.dtype=}')
+        if df.index.get_level_values('ScanNum').dtype.name != 'int64':
+            raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
         return func(df,*args,**kvargs)
     return wrapper
 
@@ -150,7 +158,7 @@ def draw_defects_map_with_rectangles_owerlap(df: pd.DataFrame, rectangles: list[
 
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-@is_df_has_valid_dtypes_decorator
+@is_df_valid_decorator
 def _build_defects_map(df: pd.DataFrame, 
                         /,
                         title: str = 'auto',
