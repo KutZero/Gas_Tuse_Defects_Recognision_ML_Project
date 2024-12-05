@@ -65,16 +65,25 @@ def cast_df_to_2d(df: pd.DataFrame, data_parts_dict = [('Time', 32), ('Amplitude
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
 def cast_df_to_3d(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cast 2d pandas to 3d one. Deletes all index and columns
+    levels except ['File', 'ScanNum', 'DetectorNum']. Store
+    all values to cells
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        Pandas dataframe with multiindex and only
+        one float/int value in cells.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        A dataframe with data. Every cell - numpy array.
+        Every numpy array have equal size.
+    """
     if not list(df.index.names) == ['File', 'ScanNum', 'DetectorNum']:
         raise ValueError(f'The df should have index with levels: "File", "ScanNum", "DetectorNum", but got: {df.index.names=}')
-    if not list(df.columns.names) == ['DataPart', 'Id']:
-        raise ValueError(f'The df should have columns with levels: "DataPart", "Id", but got: {df.columns.names=}')
-    if df.index.get_level_values('ScanNum').dtype.name != 'int64':
-        raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
-    if df.index.get_level_values('DetectorNum').dtype.name != 'int64':
-        raise ValueError(f"The df's index level 'DetectorNum' should have dtype 'int64', but got: {df.index.get_level_values('DetectorNum').dtype=}")
-    if df.columns.get_level_values('Id').dtype.name != 'int64':
-        raise ValueError(f"The df's columns level 'Id' should have dtype 'int64', but got: {df.index.get_level_values('Id').dtype=}")
         
     df = df.copy()
     df = pd.Series(data=map(lambda x: np.array(x), df.to_numpy().tolist()), index=df.index)
