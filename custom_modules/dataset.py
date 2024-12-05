@@ -19,19 +19,46 @@ from custom_modules.data_worker import (
 logger = logging.getLogger('main.'+__name__)
 
 @validate_call(config=dict(arbitrary_types_allowed=True))
-def cast_df_to_2d(df: pd.DataFrame) -> pd.DataFrame:
-    if not list(df.index.names) == ['File', 'ScanNum']:
+@validate_call(config=dict(arbitrary_types_allowed=True))
+def cast_df_to_2d(df: pd.DataFrame, data_parts_dict = [('Time', 32), ('Amplitude', 32), ('DefectDepth', 1)]) -> pd.DataFrame:
+    """Cast 3d pandas to 2d one
+    
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        A dataframe with data. Every cell - numpy array.
+        Every numpy array have equal size.
+    data_parts_dict: list[tuple[str,int]]
+        A list defining every cell's numpy arrays dividing
+        to subcolums. Default array have 65 values. First 32 - 
+        time values, second 32 - amplitude values, last - defect
+        depth. The data_parts_dict default is [('Time', 32), 
+        ('Amplitude', 32), ('DefectDepth', 1)]. In that case
+        65 values will be annotated with pandas.MultiIndex as:
+        First 32 values under the Time column, second under the
+        Amplitude column, second under the DefectDepth column on
+        level named DataPart. Each subcolumn of every DataPart 
+        level column has local id from 0 to value passed next to
+        str in tuple from the data_parts_dict
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Pandas dataframe with multiindex and only
+        one float/int value in cells.
+    """
+    if not set(['File', 'ScanNum']).issubset(df.index.names):
         raise ValueError(f'The df should have index with levels: "File", "ScanNum", but got: {df.index.names=}')
-    if not list(df.columns.names) == ['DetectorNum']:
+    if not set(['DetectorNum']).issubset(df.columns.names):
         raise ValueError(f'The df should have columns with levels: "DetectorNum", but got: {df.columns.names=}')
-    if df.columns.values.dtype.name != 'int64':
-        raise ValueError(f'The df should have columns with levels: "DetectorNum" and dtype "int64", but got: {df.columns.values.dtype=}')
-    if df.index.get_level_values('ScanNum').dtype.name != 'int64':
-        raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
         
     df = df.copy()
-    df = df.stack(0, future_stack=True)
-    tuples = [('Time', i) for i in range(32)] + [('Amplitude', i) for i in range(32)] + [('DefectDepth', 0)]
+    df = df.stack(-1, future_stack=True)
+    
+    tuples = []
+    for tup in data_parts_dict:
+        tuples = [*tuples, *[(tup[0], i) for i in range(tup[1])]]
+        
     df = pd.DataFrame(data=np.stack(df.to_list()), index=df.index, 
                       columns=pd.MultiIndex.from_tuples(tuples, names=['DataPart','Id']))
     return df
