@@ -7,10 +7,8 @@ import pathlib
 
 class DataPart(BaseModel): 
     """
-    The dataclass to store describtion to read determine pipeline
-    zone scanning result fully or partially with or without some
-    preprocessing. A function could use this data to read 
-    scanning data map and defect depths and locations map.
+    The dataclass to store describtion to preprocess data
+    to sequance of crops.
 
     The dataset consists of pipeline-zone-ultrasonic-scanning
     results. An each result being stored in a separate folder 
@@ -31,72 +29,54 @@ class DataPart(BaseModel):
     The "*_pipe.csv" file stores common params of the inspected
     pipeline.
 
-        "*_data.csv" file":
-        +-------------------detectors count-----------------+
-        |                                                   |
-        |                DataPart:                          |
-        |                (x,y)------width------+            |
-        |                 |                    |            |
-    scans count           |                  height         |
-        |                 |                    |            |
-        |                 ---------------------+            |
-        |                                                   |
-        +---------------------------------------------------+
+    The result of reading is a pandas.DataFrame (df) with columns - 
+    pandas.Index with names: 'DetectorNum' and dtype = 'int64'.
+    The df's rows is pandas.MultiIndex with levels: 'File', 
+    'ScanNun' and dtypes 'str' ('object' in pandas) and 'int64'.
+    Every cell stores single dimensional numpy.ndarray of size
+    65 where first 32 values - time ones, second 32 values - 
+    amplitude ones, and the last value - defect depth.
+    The df can store data for quantity of run scanning files
+    and also can mix them. So the DataPart only describes the
+    part of the df which is taken to make dataset of sequance
+    of crops.
+
+        The df:
+    columns:['DetectorNum']
+    index:['File', 'ScanNum']+-------------------detectors nums------------------+
+    |            |           |                                                   |
+    |            |           |                DataPart:                          |
+    |            |           |                (x,y)------width------+            |
+    |        run's names     |                |                     |            |
+    |            |       scans nums           |                  height          |
+    |            |           |                |                     |            |
+    |            |           |                +---------------------+            |
+    |            |           |                                                   |
+    -------------|----------+----------------------------------------------------+
 
     Parameters
     ----------
-    path: os.PathLike
-        The path leads to a determine pipeline zone scanning 
-        result data files. The folder should store: 
-        file like "*_data.csv"; 
-        file like "*_defects.csv";
-        file like "*_pipe.csv"
-    xy: tuple[NonNegativeInt,NonNegativeInt]
+    run_name: str, optional
+        The run name to preprocess. If None the crop will
+        be performed to all dataframe without dividing by 
+        file name
+    xy: tuple[NonNegativeInt,NonNegativeInt], default = (0,0)
         The xy stores coords of the DataPart anchor point.
-    width: Optional[PositiveInt]
+    width: PositiveInt, optional
         The width allows to set the DataPart width
-    height: Optional[PositiveInt]
+    height: PositiveInt, optional
          The height allows to set the DataPart height
-    unify_func: Optional[Callable]
-        The unify_func allows to apply unification function to raw 
-        ultrasonic scanning data and defects depths data.
-    unify_separatly: bool
-        The unify_separatly allows to choose either unify time and
-        amplitude values together (i.e. Divide all items by global
-        absolute max for example) or separatly (i.e. Divite time items 
-        by time item absolute max and divide amplitude items by amplitude
-        item absolute max).
+    crop_size: PositiveInt, default = 1
+        Crop size value
+    crop_step: PositiveInt, default = 1
+        Crop step value
+    augmentations: bool, default = False
+        Use augmentations or not
     """
-    path: os.PathLike
+    run_name: Optional[str] = None
     xy: tuple[int,int] = (0,0)
     width: Optional[PositiveInt] = None
     height: Optional[PositiveInt] = None
-    unify_func: Optional[Callable] = None
-    unify_separatly: bool = True
-
-    def _find_and_validata_data_file(self, rglob_pattern: str):
-        res = set(pathlib.Path(self.path).rglob(rglob_pattern))
-        if len(res) != 1:
-            raise ValueError(f'The path should store one "{rglob_pattern}" file, but found: {res}')
-        return res.pop()
-    
-    @computed_field
-    @property 
-    def data_path(self) -> os.PathLike:
-        return self._find_and_validata_data_file('*_data.csv')
-    
-    @computed_field
-    @property 
-    def defects_path(self) -> os.PathLike:
-        return self._find_and_validata_data_file('*_defects.csv')
-    
-    @computed_field
-    @property 
-    def pipe_path(self) -> os.PathLike:
-        return self._find_and_validata_data_file('*_pipe.csv')
-    
-    @field_validator('path')
-    def is_path_dir(cls, value):
-        if os.path.isdir(value):
-            return value
-        raise ValueError('The path should be path to a dir')
+    crop_size: PositiveInt = 1
+    crop_step: PositiveInt = 1
+    augmentations: bool = False
