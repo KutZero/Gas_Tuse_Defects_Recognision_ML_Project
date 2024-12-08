@@ -38,10 +38,10 @@ def is_df_valid_decorator(func):
             raise ValueError(f'The df should have index with levels: "File", "ScanNum", but got: {df.index.names=}')
         if not list(df.columns.names) == ['DetectorNum']:
             raise ValueError(f'The df should have columns with levels: "DetectorNum", but got: {df.columns.names=}')
-        if df.columns.values.dtype.name != 'int64':
-            raise ValueError(f'The df should have columns with levels: "DetectorNum" and dtype "int64", but got: {df.columns.values.dtype=}')
-        if df.index.get_level_values('ScanNum').dtype.name != 'int64':
-            raise ValueError(f"The df's index level 'ScanNum' should have dtype 'int64', but got: {df.index.get_level_values('ScanNum').dtype=}")
+        if not pd.api.types.is_integer(df.columns.values[0]):
+            raise ValueError(f'The df should have columns with levels: "DetectorNum" and be integer, but got: {df.columns.values.dtype=}')
+        if not pd.api.types.is_integer(df.index.get_level_values('ScanNum')[0]):
+            raise ValueError(f"The df's index level 'ScanNum' should have be integer, but got: {df.index.get_level_values('ScanNum').dtype=}")
         return func(df,*args,**kvargs)
     return wrapper
 
